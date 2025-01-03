@@ -34,6 +34,7 @@ struct ContentView: View {
         }
         .padding()
       }
+      .frame(minWidth: 0, maxWidth: .infinity, minHeight: 60)
       .padding(.vertical, 5)
       
       GroupBox(label: Text("Destination Folder").font(.headline)) {
@@ -56,6 +57,7 @@ struct ContentView: View {
         }
         .padding()
       }
+      .frame(minWidth: 0, maxWidth: .infinity, minHeight: 60)
       .padding(.vertical, 5)
       
       GroupBox(label: Text("Photos").font(.headline)) {
@@ -67,12 +69,14 @@ struct ContentView: View {
             viewModel.copyPhotos()
           }
       }
+      .frame(minWidth: 0, maxWidth: .infinity, minHeight: 60)
       .padding(.vertical, 5)
       
-      if let result = viewModel.result {
+      if let result = viewModel.result, !viewModel.isBusy {
           Text(result.description)
-              .foregroundColor(resultColor(for: result))
-              .padding()
+            .foregroundColor(result.color)
+            .padding()
+            .frame(minHeight: 50)
       }
       
       // Copy Photos Button
@@ -87,18 +91,22 @@ struct ContentView: View {
       .background(viewModel.isBusy ? Color.gray : Color.blue)
       .padding(.top)
       .cornerRadius(8)
+      .frame(minHeight: 50)
     }
     .padding()
+    .frame(minWidth: 400, minHeight: 500) // Ensure the view cannot resize smaller than this
   }
-  
-  private func resultColor(for result: FileCopyService.FileCopyResult) -> Color {
-      switch result {
-      case .success:
-          return .green
-      case .failure:
-          return .red
-      case .partialSuccess(copiedFiles: _, missingFiles: _):
+}
+
+extension FileCopyService.FileCopyResult {
+  var color: Color {
+    switch self {
+    case .success:
         return .green
-      }
+    case .failure:
+        return .red
+    case .partialSuccess(copiedFiles: _, missingFiles: _):
+      return .green
+    }
   }
 }
