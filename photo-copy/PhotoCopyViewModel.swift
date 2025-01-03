@@ -1,9 +1,28 @@
 import Foundation
 
 @MainActor
-class FileCopyViewModel: ObservableObject {
-  @Published var sourceFolder: URL?
-  @Published var destinationFolder: URL?
+final class FileCopyViewModel: ObservableObject {
+  @Published var sourceFolder: URL? {
+    didSet {
+      if let path = sourceFolder?.path {
+        StorageManager.shared.saveSourceFolderPath(path)
+      }
+    }
+  }
+  
+  @Published var destinationFolder: URL? {
+    didSet {
+      if let path = destinationFolder?.path {
+        StorageManager.shared.saveDestinationFolderPath(path)
+      }
+    }
+  }
+  
+  init() {
+    self.sourceFolder = StorageManager.shared.loadSourceFolderPath()
+    self.destinationFolder = StorageManager.shared.loadDestinationFolderPath()
+  }
+  
   @Published var photoInput: String = ""
   @Published var isBusy: Bool = false
   @Published var result: FileCopyService.FileCopyResult?
