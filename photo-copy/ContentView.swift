@@ -8,7 +8,7 @@ struct ContentView: View {
   
   var body: some View {
     VStack(alignment: .leading) {
-      Text("Photo Copier")
+      Text("Rex Photo Selector")
         .font(.largeTitle)
         .fontWeight(.bold)
         .padding(.top)
@@ -88,9 +88,8 @@ struct ContentView: View {
           .foregroundColor(.white)
           .disabled(viewModel.isBusy)
       }
-      .background(viewModel.isBusy ? Color.gray : Color.blue)
+//      .background(viewModel.isBusy ? Color.gray : Color.blue)
       .padding(.top)
-      .cornerRadius(8)
       .frame(minHeight: 50)
     }
     .padding()
