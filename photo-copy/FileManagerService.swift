@@ -96,6 +96,10 @@ enum FileCopyService {
         
         if missingFiles.isEmpty {
             return .success(copiedFiles)
+          
+        } else if copiedFiles.isEmpty && !missingFiles.isEmpty {
+          let missingFiles = "\(missingFiles.joined(separator: ", "))"
+          return .failure(.fileNotFound(missingFiles))
         } else {
             return .partialSuccess(copiedFiles: copiedFiles, missingFiles: missingFiles)
         }

@@ -60,9 +60,12 @@ struct ContentView: View {
       
       GroupBox(label: Text("Photos").font(.headline)) {
         TextField("Enter photo range or single photos (e.g. 1, 1-10)", text: $viewModel.photoInput)
-          .textFieldStyle(RoundedBorderTextFieldStyle())
+          .textFieldStyle(.roundedBorder)
           .frame(height: 40)
           .padding()
+          .onSubmit {
+            viewModel.copyPhotos()
+          }
       }
       .padding(.vertical, 5)
       
