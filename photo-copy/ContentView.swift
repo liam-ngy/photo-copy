@@ -1,59 +1,97 @@
-//
-//  ContentView.swift
-//  photo-copy
-//
-//  Created by Liam Nguyen on 3/1/2025.
-//
-
 import SwiftUI
-import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @State private var sourceFolder: URL?
+    @State private var destinationFolder: URL?
+    @State private var photoInput: String = ""
+    @State private var isBusy: Bool = false
+
+    @State private var showingSourcePicker = false
+    @State private var showingDestinationPicker = false
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
-            }
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-            .toolbar {
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
-        } detail: {
-            Text("Select an item")
-        }
-    }
+        VStack(alignment: .leading) {
+            Text("Photo Copier")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .padding(.top)
+                .padding(.bottom)
 
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+            GroupBox(label: Text("Source Folder").font(.headline)) {
+                HStack {
+                    Button("Choose...") {
+                        showingSourcePicker.toggle()
+                    }
+                    .fileImporter(isPresented: $showingSourcePicker, allowedContentTypes: [.folder], onCompletion: { result in
+                        switch result {
+                        case .success(let url):
+                            sourceFolder = url
+                        case .failure(_):
+                            break
+                        }
+                    })
+                    Spacer()
+                    Text(sourceFolder?.path ?? "No source selected")
+                        .foregroundColor(.gray)
+                        .padding(.leading)
+                }
+                .padding()
             }
+            .padding(.vertical, 5)
+
+            GroupBox(label: Text("Destination Folder").font(.headline)) {
+                HStack {
+                    Button("Choose...") {
+                        showingDestinationPicker.toggle()
+                    }
+                    .fileImporter(isPresented: $showingDestinationPicker, allowedContentTypes: [.folder], onCompletion: { result in
+                        switch result {
+                        case .success(let url):
+                            destinationFolder = url
+                        case .failure(_):
+                            break
+                        }
+                    })
+                    Spacer()
+                    Text(destinationFolder?.path ?? "No destination selected")
+                        .foregroundColor(.gray)
+                        .padding(.leading)
+                }
+                .padding()
+            }
+            .padding(.vertical, 5)
+
+            GroupBox(label: Text("Photos").font(.headline)) {
+                TextField("Enter photo range or single photos (e.g., rex-1, rex-1-rex-10)", text: $photoInput)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .frame(height: 40) // Increased height for larger text field
+                    .padding()
+            }
+            .padding(.vertical, 5)
+
+            // Copy Photos Button
+            Button(action: {
+                // Trigger photo copying logic here
+                isBusy.toggle()
+            }) {
+                Text(isBusy ? "Copying..." : "Copy Photos")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(isBusy ? Color.gray : Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+            }
+            .disabled(isBusy)
+            .padding(.top)
         }
+        .padding()
+        .frame(width: 500, height: 350) // Increased window frame size
     }
 }
 
-#Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView()
+            .frame(width: 500, height: 350) // Increased preview window size
+    }
 }
