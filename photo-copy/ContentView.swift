@@ -1,10 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-  @State private var sourceFolder: URL?
-  @State private var destinationFolder: URL?
-  @State private var photoInput: String = ""
-  @State private var isBusy: Bool = false
+  @StateObject private var viewModel = FileCopyViewModel()
   
   @State private var showingSourcePicker = false
   @State private var showingDestinationPicker = false
@@ -17,7 +14,7 @@ struct ContentView: View {
         .padding(.top)
         .padding(.bottom)
       
-      GroupBox(label: Text("Source Folder").font(.headline)) {
+      GroupBox(label: Text("Source Folder (Photos)").font(.headline)) {
         HStack {
           Button("Choose...") {
             showingSourcePicker.toggle()
@@ -25,13 +22,13 @@ struct ContentView: View {
           .fileImporter(isPresented: $showingSourcePicker, allowedContentTypes: [.folder], onCompletion: { result in
             switch result {
             case .success(let url):
-              sourceFolder = url
+              viewModel.sourceFolder = url
             case .failure(_):
               break
             }
           })
           Spacer()
-          Text(sourceFolder?.path ?? "No source selected")
+          Text(viewModel.sourceFolder?.path ?? "No source selected")
             .foregroundColor(.gray)
             .padding(.leading)
         }
@@ -47,13 +44,13 @@ struct ContentView: View {
           .fileImporter(isPresented: $showingDestinationPicker, allowedContentTypes: [.folder], onCompletion: { result in
             switch result {
             case .success(let url):
-              destinationFolder = url
+              viewModel.destinationFolder = url
             case .failure(_):
               break
             }
           })
           Spacer()
-          Text(destinationFolder?.path ?? "No destination selected")
+          Text(viewModel.destinationFolder?.path ?? "No destination selected")
             .foregroundColor(.gray)
             .padding(.leading)
         }
@@ -62,34 +59,41 @@ struct ContentView: View {
       .padding(.vertical, 5)
       
       GroupBox(label: Text("Photos").font(.headline)) {
-        TextField("Enter photo range or single photos (e.g., rex-1, rex-1-rex-10)", text: $photoInput)
+        TextField("Enter photo range or single photos (e.g. 1, 1-10)", text: $viewModel.photoInput)
           .textFieldStyle(RoundedBorderTextFieldStyle())
-          .frame(height: 40) // Increased height for larger text field
+          .frame(height: 40)
           .padding()
       }
       .padding(.vertical, 5)
       
-      Button(action: {
-        isBusy.toggle()
-      }) {
-        Text(isBusy ? "Copying..." : "Copy Photos")
-          .frame(maxWidth: .infinity)
-          .padding()
-          .background(isBusy ? Color.gray : Color.blue)
-          .foregroundColor(.white)
-          .cornerRadius(8)
+      if let result = viewModel.result {
+          Text(result.description)
+              .foregroundColor(resultColor(for: result))
+              .padding()
       }
-      .disabled(isBusy)
+      
+      // Copy Photos Button
+      Button(action: {
+        viewModel.copyPhotos()
+      }) {
+        Text(viewModel.isBusy ? "Copying..." : "Copy Photos")
+          .padding()
+          .foregroundColor(.white)
+          .disabled(viewModel.isBusy)
+      }
+      .background(viewModel.isBusy ? Color.gray : Color.blue)
       .padding(.top)
+      .cornerRadius(8)
     }
     .padding()
-    .frame(width: 500, height: 350) // Increased window frame size
   }
-}
-
-struct ContentView_Previews: PreviewProvider {
-  static var previews: some View {
-    ContentView()
-      .frame(width: 500, height: 500) // Increased preview window size
+  
+  private func resultColor(for result: FileCopyResult) -> Color {
+      switch result {
+      case .success:
+          return .green
+      case .failure:
+          return .red
+      }
   }
 }
