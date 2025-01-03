@@ -88,12 +88,14 @@ struct ContentView: View {
     .padding()
   }
   
-  private func resultColor(for result: FileCopyResult) -> Color {
+  private func resultColor(for result: FileCopyService.FileCopyResult) -> Color {
       switch result {
       case .success:
           return .green
       case .failure:
           return .red
+      case .partialSuccess(copiedFiles: _, missingFiles: _):
+        return .green
       }
   }
 }
