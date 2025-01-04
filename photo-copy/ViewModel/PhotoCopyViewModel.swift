@@ -94,20 +94,24 @@ final class FileCopyViewModel: ObservableObject {
     return photoList
   }
   
-  /// Parses a single photo range input like "2-5" into an array of photo numbers.
+  /// Parses a single photo range input like "2-5" or "5-1" into an array of photo numbers.
   ///
   /// Example: "2-5" becomes ["2", "3", "4", "5"].
+  /// Example: "5-1" becomes ["1", "2", "3", "4", "5"].
   ///
   /// - Parameter range: A string representing a range of photo numbers.
   /// - Returns: An array of strings representing the individual photo numbers in the range, or `nil` if invalid.
   private func parseRange(_ range: String) -> [String]? {
-    let bounds = range.split(separator: "-").map { String($0) }
-    
-    // Ensure there are two bounds and they are valid numbers
-    guard bounds.count == 2, let start = Int(bounds[0]), let end = Int(bounds[1]), start <= end else {
-      return nil
-    }
-    
-    return (start...end).map { String($0) }
+      let bounds = range.split(separator: "-").map { String($0) }
+      
+      // Ensure there are two bounds and they are valid numbers
+      guard bounds.count == 2, let start = Int(bounds[0]), let end = Int(bounds[1]) else {
+          return nil
+      }
+      
+      // Adjust the bounds if the start is greater than the end
+      let (startRange, endRange) = start <= end ? (start, end) : (end, start)
+      
+      return (startRange...endRange).map { String($0) }
   }
 }
