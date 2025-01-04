@@ -38,9 +38,9 @@ enum FileCopyService {
     var description: String {
       switch self {
       case .success(let copiedFiles):
-        return "Successfully copied files: \(copiedFiles.joined(separator: ", "))"
+        return "Successfully copied files: \(copiedFiles.joined(separator: ", "))\nCopied files: \(copiedFiles.count)"
       case .partialSuccess(let copiedFiles, let missingFiles):
-        return "Successfully copied files: \(copiedFiles.joined(separator: ", "))\nFiles not found: \(missingFiles.joined(separator: ", "))"
+        return "Successfully copied files: \(copiedFiles.joined(separator: ", "))\nCopied files: \(copiedFiles.count)\nFiles not found: \(missingFiles.joined(separator: ", "))\nNumber of files not found: \(missingFiles.count)"
       case .failure(let error):
         return error.description
       }
