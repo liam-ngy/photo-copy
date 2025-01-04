@@ -1,7 +1,7 @@
 import Foundation
 
 enum FileCopyService {
-  enum FileCopyError: Error, CustomStringConvertible {
+  enum FileCopyError: Error {
     case invalidSource
     case invalidDestination
     case fileNotFound(String)
@@ -9,25 +9,6 @@ enum FileCopyService {
     case insufficientPermissions
     case invalidPhotoRange
     case unknownError(String)
-    
-    var description: String {
-      switch self {
-      case .invalidSource:
-        return "The source folder does not exist."
-      case .invalidDestination:
-        return "The destination folder does not exist."
-      case .fileNotFound(let file):
-        return "The file '\(file)' was not found in the source folder."
-      case .copyFailed(let file):
-        return "Failed to copy the file '\(file)'."
-      case .insufficientPermissions:
-        return "Insufficient permissions to access or copy files."
-      case .invalidPhotoRange:
-        return "Please enter a valid photo range."
-      case .unknownError(let message):
-        return "An unknown error occurred: \(message)"
-      }
-    }
   }
   
   enum FileCopyResult {
@@ -36,14 +17,8 @@ enum FileCopyService {
     case failure(FileCopyError)
     
     var description: String {
-      switch self {
-      case .success(let copiedFiles):
-        return "Successfully copied files: \(copiedFiles.joined(separator: ", "))\nCopied files: \(copiedFiles.count)"
-      case .partialSuccess(let copiedFiles, let missingFiles):
-        return "Successfully copied files: \(copiedFiles.joined(separator: ", "))\nCopied files: \(copiedFiles.count)\nFiles not found: \(missingFiles.joined(separator: ", "))\nNumber of files not found: \(missingFiles.count)"
-      case .failure(let error):
-        return error.description
-      }
+      let message = FileCopyMessageBuilder.buildMessage(for: self)
+      return message
     }
   }
   
@@ -100,3 +75,27 @@ enum FileCopyService {
   }
 }
 
+
+// MARK: - Error
+
+extension FileCopyService.FileCopyError: CustomStringConvertible {
+      var description: String {
+      switch self {
+      case .invalidSource:
+        return "The source folder does not exist."
+      case .invalidDestination:
+        return "The destination folder does not exist."
+      case .fileNotFound(let file):
+        return "The file '\(file)' was not found in the source folder."
+      case .copyFailed(let file):
+        return "Failed to copy the file '\(file)'."
+      case .insufficientPermissions:
+        return "Insufficient permissions to access or copy files."
+      case .invalidPhotoRange:
+        return "Please enter a valid photo range."
+      case .unknownError(let message):
+        return "An unknown error occurred: \(message)"
+      }
+    }
+
+}

@@ -24,6 +24,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		661AA2962D29386700106CFE /* photo-copy.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; name = "photo-copy.playground"; path = "../photo-copy.playground"; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		6686BADE2D27682F006550D8 /* photo-copy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "photo-copy.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6686BAF12D276830006550D8 /* photo-copyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "photo-copyTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6686BAFB2D276830006550D8 /* photo-copyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "photo-copyUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -75,6 +76,7 @@
 		6686BAD52D27682E006550D8 = {
 			isa = PBXGroup;
 			children = (
+				661AA2962D29386700106CFE /* photo-copy.playground */,
 				6686BAE02D27682F006550D8 /* photo-copy */,
 				6686BAF42D276830006550D8 /* photo-copyTests */,
 				6686BAFE2D276830006550D8 /* photo-copyUITests */,
@@ -395,7 +397,7 @@
 				CODE_SIGN_ENTITLEMENTS = "photo-copy/photo_copy.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "\"photo-copy/Preview Content\"";
 				DEVELOPMENT_TEAM = 8Q64HL9M7Y;
 				ENABLE_PREVIEWS = YES;
@@ -406,8 +408,8 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1;
+				MACOSX_DEPLOYMENT_TARGET = 13.5;
+				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "liam-ng.photo-copy";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -423,7 +425,7 @@
 				CODE_SIGN_ENTITLEMENTS = "photo-copy/photo_copy.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "\"photo-copy/Preview Content\"";
 				DEVELOPMENT_TEAM = 8Q64HL9M7Y;
 				ENABLE_PREVIEWS = YES;
@@ -434,8 +436,8 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1;
+				MACOSX_DEPLOYMENT_TARGET = 13.5;
+				MARKETING_VERSION = 0.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "liam-ng.photo-copy";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
