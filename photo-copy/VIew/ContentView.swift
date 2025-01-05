@@ -24,7 +24,7 @@ struct ContentView: View {
           .fileImporter(isPresented: $showingSourcePicker, allowedContentTypes: [.folder], onCompletion: { result in
             switch result {
             case .success(let url):
-              viewModel.setSourceFolder(url)
+              viewModel.sourceFolder = url
             case .failure(_):
               break
             }
@@ -53,7 +53,7 @@ struct ContentView: View {
               onCompletion: { result in
                 switch result {
                 case .success(let url):
-                  viewModel.setBaseDestinationFolder(url)
+                  viewModel.baseDestinationFolder = url
                 case .failure(_):
                   break
                 }
@@ -93,10 +93,7 @@ struct ContentView: View {
             // Show input field when no customer is selected
             if viewModel.destinationFolder == nil {
               HStack {
-                TextField("Enter customer (e.g., 69 Liam)", text: Binding(
-                  get: { viewModel.customerInput },
-                  set: { viewModel.updateCustomerInput($0) }
-                ))
+                TextField("Enter customer (e.g., 69 Liam)", text: $viewModel.customerInput)
                   .textFieldStyle(.roundedBorder)
                   .frame(maxWidth: 300)
                   .focused($isCustomerInputFocused)

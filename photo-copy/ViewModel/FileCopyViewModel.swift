@@ -9,12 +9,12 @@ final class FileCopyViewModel: ObservableObject {
   // MARK: - Published Properties
   
   /// The source folder URL where files will be copied from.
-  @Published private(set) var sourceFolder: URL? {
+  @Published var sourceFolder: URL? {
     didSet { updateViewState() }
   }
   
   /// The destination folder URL where files will be copied to.
-  @Published private(set) var destinationFolder: URL? {
+  @Published var destinationFolder: URL? {
     didSet { updateViewState() }
   }
   
@@ -27,11 +27,11 @@ final class FileCopyViewModel: ObservableObject {
   /// The result of the file copy operation, either success or failure with error details.
   @Published var result: FileCopyService.FileCopyResult?
   
-  @Published private(set) var baseDestinationFolder: URL? {
+  @Published var baseDestinationFolder: URL? {
     didSet { updateViewState() }
   }
   
-  @Published private(set) var customerInput: String = "" {
+  @Published var customerInput: String = "" {
     didSet {
       if customerInput.isEmpty {
         clearDestination()
@@ -50,6 +50,14 @@ final class FileCopyViewModel: ObservableObject {
     viewState == .copying
   }
   
+  var shouldFocusCustomerInput: Bool {
+    viewState == .customerInputRequired
+  }
+  
+  var shouldFocusPhotoInput: Bool {
+    viewState == .photoInputRequired
+  }
+  
   // MARK: - Initializer
   
   /// Initializes the view model, potentially loading saved source and destination folder paths.
@@ -61,14 +69,6 @@ final class FileCopyViewModel: ObservableObject {
   }
   
   // MARK: - Public Methods
-  
-  func setSourceFolder(_ url: URL) {
-    sourceFolder = url
-  }
-  
-  func setBaseDestinationFolder(_ url: URL) {
-    baseDestinationFolder = url
-  }
   
   func updateCustomerInput(_ input: String) {
     customerInput = input
