@@ -31,16 +31,83 @@ final class FileCopyViewModel: ObservableObject {
   /// The result of the file copy operation, either success or failure with error details.
   @Published var result: FileCopyService.FileCopyResult?
   
+  @Published var baseDestinationFolder: URL?
+  
+  @Published var customerInput: String = "" {
+      didSet {
+          if customerInput.isEmpty {
+              clearDestination()
+          }
+        
+        result = nil
+      }
+  }
+  
+  private var customerDirBookmark: Data?
+  private let fileManager: FileManaging
+  
   // MARK: - Initializer
   
   /// Initializes the view model, potentially loading saved source and destination folder paths.
-  init() {
+  init(fileManager: FileManaging = SecureFileManager()) {
     // Future iteration: Load source and destination folder paths from a persistent storage solution.
     self.sourceFolder = nil
     self.destinationFolder = nil
+    self.fileManager = fileManager
   }
   
   // MARK: - Public Methods
+  
+  func selectExistingCustomer(_ customerDir: String) {
+      guard let baseDestination = baseDestinationFolder else { return }
+      
+      switch fileManager.getDirectory(at: baseDestination, withName: customerDir) {
+      case .success(let secureURL):
+          destinationFolder = secureURL
+          customerInput = customerDir
+      case .failure(let error):
+          result = .failure(error)
+      }
+  }
+  
+  func getExistingCustomers() -> [String] {
+      guard let baseDestination = baseDestinationFolder else { return [] }
+      
+      switch fileManager.listContents(of: baseDestination) {
+      case .success(let customers):
+          return customers
+      case .failure:
+          return []
+      }
+  }
+  
+  func clearCustomer() {
+      customerInput = ""
+      // clearDestination() will be called by customerInput didSet
+  }
+  
+  
+  // Add new function for customer directory
+  func createCustomerDirectory() {
+      guard let baseDestination = baseDestinationFolder else {
+          result = .failure(.invalidDestination)
+          return
+      }
+      
+      let trimmedInput = customerInput.trimmingCharacters(in: .whitespaces)
+      guard !trimmedInput.isEmpty else {
+          result = .failure(.invalidCustomerInput)
+          return
+      }
+      
+      switch fileManager.createDirectory(at: baseDestination, withName: trimmedInput) {
+      case .success(let secureURL):
+          destinationFolder = secureURL
+          result = .success(["Created directory for \(trimmedInput)"])
+      case .failure(let error):
+          result = .failure(error)
+      }
+  }
   
   /// Initiates the file copy operation by validating the source and destination folders,
   /// parsing the photo range, and performing the file copy asynchronously.
@@ -114,4 +181,9 @@ final class FileCopyViewModel: ObservableObject {
       
       return (startRange...endRange).map { String($0) }
   }
+  
+  private func clearDestination() {
+      destinationFolder = nil
+  }
 }
+

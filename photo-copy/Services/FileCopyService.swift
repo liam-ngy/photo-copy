@@ -9,6 +9,8 @@ enum FileCopyService {
     case insufficientPermissions
     case invalidPhotoRange
     case unknownError(String)
+    case customerDirectoryCreationFailed
+    case invalidCustomerInput
   }
   
   enum FileCopyResult {
@@ -95,6 +97,10 @@ extension FileCopyService.FileCopyError: CustomStringConvertible {
         return "Please enter a valid photo range."
       case .unknownError(let message):
         return "An unknown error occurred: \(message)"
+      case .customerDirectoryCreationFailed:
+        return "Couldn't create directory"
+      case .invalidCustomerInput:
+      return "Invalid customer input"
       }
     }
 
