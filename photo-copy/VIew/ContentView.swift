@@ -6,7 +6,6 @@ struct ContentView: View {
   @State private var showingSourcePicker = false
   @State private var showingDestinationPicker = false
   @FocusState private var isCustomerInputFocused: Bool
-  @FocusState private var isPhotoInputFocused: Bool
   
   var body: some View {
     VStack(alignment: .leading) {
@@ -25,7 +24,7 @@ struct ContentView: View {
           .fileImporter(isPresented: $showingSourcePicker, allowedContentTypes: [.folder], onCompletion: { result in
             switch result {
             case .success(let url):
-              viewModel.sourceFolder = url
+              viewModel.setSourceFolder(url)
             case .failure(_):
               break
             }
@@ -54,7 +53,7 @@ struct ContentView: View {
               onCompletion: { result in
                 switch result {
                 case .success(let url):
-                  viewModel.baseDestinationFolder = url
+                  viewModel.setBaseDestinationFolder(url)
                 case .failure(_):
                   break
                 }
@@ -73,7 +72,9 @@ struct ContentView: View {
               Menu(viewModel.destinationFolder != nil ? "Selected: \(viewModel.customerInput)" : "Select Customer") {
                 ForEach(viewModel.getExistingCustomers(), id: \.self) { customer in
                   Button(customer) {
-                    viewModel.selectExistingCustomer(customer)
+                    Task {
+                      _ = await viewModel.selectExistingCustomer(customer)
+                    }
                   }
                 }
               }
@@ -92,18 +93,25 @@ struct ContentView: View {
             // Show input field when no customer is selected
             if viewModel.destinationFolder == nil {
               HStack {
-                TextField("Enter customer (e.g., 69 Liam)", text: $viewModel.customerInput)
+                TextField("Enter customer (e.g., 69 Liam)", text: Binding(
+                  get: { viewModel.customerInput },
+                  set: { viewModel.updateCustomerInput($0) }
+                ))
                   .textFieldStyle(.roundedBorder)
                   .frame(maxWidth: 300)
                   .focused($isCustomerInputFocused)
                   .onSubmit {
                     if !viewModel.customerInput.isEmpty && viewModel.baseDestinationFolder != nil {
-                      viewModel.createCustomerDirectory()
+                      Task {
+                        _ = await viewModel.createCustomerDirectory()
+                      }
                     }
                   }
                 
                 Button("Create") {
-                  viewModel.createCustomerDirectory()
+                  Task {
+                    _ = await viewModel.createCustomerDirectory()
+                  }
                 }
                 .disabled(viewModel.customerInput.isEmpty || viewModel.baseDestinationFolder == nil)
               }
@@ -123,10 +131,11 @@ struct ContentView: View {
         TextField("Enter photo range or single photos (e.g. 1, 1-10)", text: $viewModel.photoInput)
           .textFieldStyle(.roundedBorder)
           .frame(height: 40)
-          .focused($isPhotoInputFocused)
           .padding()
           .onSubmit {
-            viewModel.copyPhotos()
+            Task {
+              _ = await viewModel.copyPhotos()
+            }
           }
       }
       .frame(minWidth: 0, maxWidth: .infinity, minHeight: 60)
@@ -140,7 +149,9 @@ struct ContentView: View {
       }
       
       Button(action: {
-        viewModel.copyPhotos()
+        Task {
+          _ = await viewModel.copyPhotos()
+        }
       }) {
         Text(viewModel.isBusy ? "Copying..." : "Copy Photos")
           .frame(maxWidth: .infinity)
@@ -154,12 +165,9 @@ struct ContentView: View {
     }
     .padding()
     .frame(minWidth: 400, minHeight: 500)
-    .onChange(of: viewModel.destinationFolder) { newValue in
-      if newValue == nil {
+    .onChange(of: viewModel.destinationFolder) { _ in
+      if viewModel.destinationFolder == nil {
         isCustomerInputFocused = true
-      } else {
-        // Focus photo input when a customer is successfully selected/created
-        isPhotoInputFocused = true
       }
     }
   }

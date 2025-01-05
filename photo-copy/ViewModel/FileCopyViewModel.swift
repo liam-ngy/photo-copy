@@ -9,42 +9,46 @@ final class FileCopyViewModel: ObservableObject {
   // MARK: - Published Properties
   
   /// The source folder URL where files will be copied from.
-  @Published var sourceFolder: URL? {
-    didSet {
-      // TODO: Handle saving source folder path if needed in future iterations.
-    }
+  @Published private(set) var sourceFolder: URL? {
+    didSet { updateViewState() }
   }
   
   /// The destination folder URL where files will be copied to.
-  @Published var destinationFolder: URL? {
-    didSet {
-      // TODO: Handle saving destination folder path if needed in future iterations.
-    }
+  @Published private(set) var destinationFolder: URL? {
+    didSet { updateViewState() }
   }
   
   /// A string representing the input photo range or specific photo names to copy.
   @Published var photoInput: String = ""
   
   /// Boolean flag to indicate if the copy operation is currently in progress.
-  @Published var isBusy: Bool = false
+  @Published private(set) var viewState: PhotoCopyViewState = .initial
   
   /// The result of the file copy operation, either success or failure with error details.
   @Published var result: FileCopyService.FileCopyResult?
   
-  @Published var baseDestinationFolder: URL?
-  
-  @Published var customerInput: String = "" {
-      didSet {
-          if customerInput.isEmpty {
-              clearDestination()
-          }
-        
-        result = nil
-      }
+  @Published private(set) var baseDestinationFolder: URL? {
+    didSet { updateViewState() }
   }
   
-  private var customerDirBookmark: Data?
+  @Published private(set) var customerInput: String = "" {
+    didSet {
+      if customerInput.isEmpty {
+        clearDestination()
+      }
+      result = nil
+    }
+  }
+  
+  // MARK: - Private Properties
+  
   private let fileManager: FileManaging
+  
+  // MARK: - Computed Properties
+  
+  var isBusy: Bool {
+    viewState == .copying
+  }
   
   // MARK: - Initializer
   
@@ -58,99 +62,121 @@ final class FileCopyViewModel: ObservableObject {
   
   // MARK: - Public Methods
   
-  func selectExistingCustomer(_ customerDir: String) {
-      guard let baseDestination = baseDestinationFolder else { return }
-      
-      switch fileManager.getDirectory(at: baseDestination, withName: customerDir) {
-      case .success(let secureURL):
-          destinationFolder = secureURL
-          customerInput = customerDir
-      case .failure(let error):
-          result = .failure(error)
-      }
+  func setSourceFolder(_ url: URL) {
+    sourceFolder = url
+  }
+  
+  func setBaseDestinationFolder(_ url: URL) {
+    baseDestinationFolder = url
+  }
+  
+  func updateCustomerInput(_ input: String) {
+    customerInput = input
   }
   
   func getExistingCustomers() -> [String] {
-      guard let baseDestination = baseDestinationFolder else { return [] }
-      
-      switch fileManager.listContents(of: baseDestination) {
-      case .success(let customers):
-          return customers
-      case .failure:
-          return []
-      }
+    guard let baseDestination = baseDestinationFolder else { return [] }
+    
+    switch fileManager.listContents(of: baseDestination) {
+    case .success(let customers):
+      return customers.sorted()
+    case .failure:
+      return []
+    }
+  }
+  
+  func selectExistingCustomer(_ customerDir: String) async -> Result<Void, FileCopyService.FileCopyError> {
+    guard let baseDestination = baseDestinationFolder else {
+      return .failure(.invalidDestination)
+    }
+    
+    switch fileManager.getDirectory(at: baseDestination, withName: customerDir) {
+    case .success(let secureURL):
+      destinationFolder = secureURL
+      customerInput = customerDir
+      return .success(())
+    case .failure(let error):
+      return .failure(error)
+    }
+  }
+  
+  func createCustomerDirectory() async -> Result<Void, FileCopyService.FileCopyError> {
+    guard let baseDestination = baseDestinationFolder else {
+      return .failure(.invalidDestination)
+    }
+    
+    let trimmedInput = customerInput.trimmingCharacters(in: .whitespaces)
+    guard !trimmedInput.isEmpty else {
+      return .failure(.invalidCustomerInput)
+    }
+    
+    switch fileManager.createDirectory(at: baseDestination, withName: trimmedInput) {
+    case .success(let secureURL):
+      destinationFolder = secureURL
+      return .success(())
+    case .failure(let error):
+      return .failure(error)
+    }
   }
   
   func clearCustomer() {
-      customerInput = ""
-      // clearDestination() will be called by customerInput didSet
+    customerInput = ""
+    clearDestination()
   }
   
-  
-  // Add new function for customer directory
-  func createCustomerDirectory() {
-      guard let baseDestination = baseDestinationFolder else {
-          result = .failure(.invalidDestination)
-          return
-      }
-      
-      let trimmedInput = customerInput.trimmingCharacters(in: .whitespaces)
-      guard !trimmedInput.isEmpty else {
-          result = .failure(.invalidCustomerInput)
-          return
-      }
-      
-      switch fileManager.createDirectory(at: baseDestination, withName: trimmedInput) {
-      case .success(let secureURL):
-          destinationFolder = secureURL
-          result = .success(["Created directory for \(trimmedInput)"])
-      case .failure(let error):
-          result = .failure(error)
-      }
-  }
-  
-  /// Initiates the file copy operation by validating the source and destination folders,
-  /// parsing the photo range, and performing the file copy asynchronously.
-  func copyPhotos() {
-    // Ensure source and destination folders are set
-    guard let source = sourceFolder, let destination = destinationFolder else {
-      result = .failure(.invalidSource)
-      return
+  func copyPhotos() async -> Result<FileCopyService.FileCopyResult, FileCopyService.FileCopyError> {
+    guard let source = sourceFolder,
+          let destination = destinationFolder else {
+      return .failure(.invalidSource)
     }
     
-    // Parse the input photo range
     let photoRange = parsePhotoRange()
-    
-    // If no valid photo range is found, return failure
     if photoRange.isEmpty {
-      result = .failure(.invalidPhotoRange)
-      return
+      return .failure(.invalidPhotoRange)
     }
     
-    // Perform the file copy operation asynchronously
-    Task {
-      isBusy = true
-      let serviceResult = await FileCopyService.copyFiles(from: source, to: destination, files: photoRange)
-      result = serviceResult
-      isBusy = false
-    }
+    viewState = .copying
+    
+    let result = await FileCopyService.copyFiles(
+      from: source,
+      to: destination,
+      files: photoRange
+    )
+    
+    self.result = result
+    viewState = .completed(result)
+    return .success(result)
   }
   
   // MARK: - Private Methods
   
-  /// Parses the photo input string into an array of photo names or ranges.
-  ///
-  /// Example: "1, 2-5, 7" becomes ["1", "2", "3", "4", "5", "7"].
-  ///
-  /// - Returns: An array of photo names or ranges.
+  private func updateViewState() {
+    viewState = computeViewState()
+  }
+  
+  private func computeViewState() -> PhotoCopyViewState {
+    switch (sourceFolder, baseDestinationFolder, destinationFolder) {
+    case (nil, _, _):
+      return .initial
+    case (_, nil, _):
+      return .sourceSelected
+    case (_, _, nil):
+      return .customerInputRequired
+    case (_, _, .some):
+      return .photoInputRequired
+    }
+  }
+  
+  private func clearDestination() {
+    destinationFolder = nil
+  }
+  
   private func parsePhotoRange() -> [String] {
     var photoList: [String] = []
-    
-    // Split the input by commas and remove unnecessary whitespace
-    let components = photoInput.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }
+    let components = photoInput.split(separator: ",")
+      .map { String($0).trimmingCharacters(in: .whitespaces) }
     
     for component in components {
-      // Check if component is a valid range or single photo number
       if let range = parseRange(component) {
         photoList.append(contentsOf: range)
       } else if let singleValue = Int(component) {
@@ -161,29 +187,17 @@ final class FileCopyViewModel: ObservableObject {
     return photoList
   }
   
-  /// Parses a single photo range input like "2-5" or "5-1" into an array of photo numbers.
-  ///
-  /// Example: "2-5" becomes ["2", "3", "4", "5"].
-  /// Example: "5-1" becomes ["1", "2", "3", "4", "5"].
-  ///
-  /// - Parameter range: A string representing a range of photo numbers.
-  /// - Returns: An array of strings representing the individual photo numbers in the range, or `nil` if invalid.
   private func parseRange(_ range: String) -> [String]? {
-      let bounds = range.split(separator: "-").map { String($0) }
-      
-      // Ensure there are two bounds and they are valid numbers
-      guard bounds.count == 2, let start = Int(bounds[0]), let end = Int(bounds[1]) else {
-          return nil
-      }
-      
-      // Adjust the bounds if the start is greater than the end
-      let (startRange, endRange) = start <= end ? (start, end) : (end, start)
-      
-      return (startRange...endRange).map { String($0) }
-  }
-  
-  private func clearDestination() {
-      destinationFolder = nil
+    let bounds = range.split(separator: "-").map { String($0) }
+    
+    guard bounds.count == 2,
+          let start = Int(bounds[0]),
+          let end = Int(bounds[1]) else {
+      return nil
+    }
+    
+    let (startRange, endRange) = start <= end ? (start, end) : (end, start)
+    return (startRange...endRange).map { String($0) }
   }
 }
 
