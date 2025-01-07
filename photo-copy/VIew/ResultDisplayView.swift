@@ -40,12 +40,14 @@ struct ResultDisplayView: View {
                   Text("Copied Files (\(copied.count)):")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                  ForEach(copied, id: \.self) { file in
-                    HStack {
-                      Image(systemName: "photo")
-                        .foregroundColor(.blue)
-                      Text(file)
-                        .font(.system(.body, design: .monospaced))
+                  HStack {
+                    ForEach(copied, id: \.self) { file in
+                      HStack {
+                        Image(systemName: "photo")
+                          .foregroundColor(.blue)
+                        Text(file)
+                          .font(.system(.body, design: .monospaced))
+                      }
                     }
                   }
                 }
