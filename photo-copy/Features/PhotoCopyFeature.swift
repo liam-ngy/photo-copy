@@ -44,6 +44,8 @@ struct PhotoCopyFeature {
     case createCustomerDirectory
     case customerDirectoryCreated(URL)
     case customerDirectoryFailed(FileCopyService.FileCopyError)
+    
+    case clearCustomer
   }
   
   
@@ -101,6 +103,11 @@ struct PhotoCopyFeature {
         
       case let .customerDirectoryFailed(error):
         state.lastOperationMessage = error.description
+        return .none
+        
+      case .clearCustomer:
+        state.destinationFolder = nil
+        state.customerInput = ""
         return .none
       }
     }

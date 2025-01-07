@@ -30,13 +30,12 @@ struct ContentView: View {
               switch result {
               case .success(let url):
                 viewStore.send(.setSourceFolder(url))
-                viewModel.sourceFolder = url
               case .failure(_):
                 viewStore.send(.sourceSelectionCancelled)
               }
             })
             Spacer()
-            Text(viewModel.sourceFolder?.path ?? "No source selected")
+            Text(viewStore.sourceFolder?.path ?? "No source selected")
               .foregroundColor(.gray)
               .padding(.leading)
           }
@@ -60,14 +59,13 @@ struct ContentView: View {
                   switch result {
                   case .success(let url):
                     viewStore.send(.setBaseDestinationFolder(url))
-                    viewModel.baseDestinationFolder = url
                   case .failure(_):
                     viewStore.send(.destinationSelectionCancelled)
                   }
                 }
               )
               Spacer()
-              Text(viewModel.baseDestinationFolder?.path ?? "No base folder selected")
+              Text(viewStore.baseDestinationFolder?.path ?? "No base folder selected")
                 .foregroundColor(.gray)
                 .padding(.leading)
             }
@@ -76,7 +74,7 @@ struct ContentView: View {
             if let _ = viewModel.baseDestinationFolder {
               // Always show the Menu and New Customer button
               HStack {
-                Menu(viewModel.destinationFolder != nil ? "Selected: \(viewModel.customerInput)" : "Select Customer") {
+                Menu(viewStore.isCustomerDirectoryCreated ? "Selected: \(viewStore.customerInput)" : "Select Customer") {
                   ForEach(viewModel.getExistingCustomers(), id: \.self) { customer in
                     Button(customer) {
                       Task {
@@ -86,13 +84,12 @@ struct ContentView: View {
                   }
                 }
                 
-                if viewModel.destinationFolder != nil {
+                // Always show New Customer button when a customer is selected
+                if viewStore.isCustomerDirectoryCreated {
                   Button("New Customer") {
-                    viewModel.clearCustomer()
+                    viewStore.send(.clearCustomer)
                   }
                   .keyboardShortcut("n", modifiers: [.command, .shift])
-                  
-                  
                 }
               }
               .padding(.vertical, 5)
@@ -109,18 +106,12 @@ struct ContentView: View {
                   .focused($isCustomerInputFocused)
                   .onSubmit {
                     if viewStore.canCreateCustomerDirectory {
-                      Task {
-                        viewStore.send(.createCustomerDirectory)
-                        _ = await viewModel.createCustomerDirectory()
-                      }
+                      viewStore.send(.createCustomerDirectory)
                     }
                   }
                   
                   Button("Create") {
-                    Task {
-                      viewStore.send(.createCustomerDirectory)
-                      _ = await viewModel.createCustomerDirectory()
-                    }
+                    viewStore.send(.createCustomerDirectory)
                   }
                   .disabled(!viewStore.canCreateCustomerDirectory)
                 }
