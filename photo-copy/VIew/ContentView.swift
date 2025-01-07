@@ -61,8 +61,9 @@ struct ContentView: View {
                   switch result {
                   case .success(let url):
                     viewModel.baseDestinationFolder = url
+                    viewStore.send(.setBaseDestinationFolder(url))
                   case .failure(_):
-                    break
+                    viewStore.send(.destinationSelectionCancelled)
                   }
                 }
               )
