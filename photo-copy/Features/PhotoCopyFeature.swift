@@ -4,7 +4,7 @@ import ComposableArchitecture
 struct PhotoCopyFeature: Reducer {
   struct State: Equatable {
     var sourceFolder: URL?
-    var baseDestinationFolder: URL?
+    var paxFolder: URL?
     var destinationFolder: URL?
     var customerInput: String = ""
     var photoInput: String = ""
@@ -16,7 +16,7 @@ struct PhotoCopyFeature: Reducer {
     }
     
     var canCreateCustomerDirectory: Bool {
-      hasValidCustomerInput && baseDestinationFolder != nil
+      hasValidCustomerInput && paxFolder != nil
     }
     
     var isCustomerDirectoryCreated: Bool {
@@ -48,8 +48,8 @@ struct PhotoCopyFeature: Reducer {
   enum Action: Equatable {
     case setSourceFolder(URL)
     case sourceSelectionCancelled
-    case setBaseDestinationFolder(URL)
-    case destinationSelectionCancelled
+    case setPaxFolder(URL)
+    case paxSelectionCancelled
     
     case loadExistingCustomers
     case existingCustomersLoaded([String])
@@ -79,17 +79,17 @@ struct PhotoCopyFeature: Reducer {
       case .sourceSelectionCancelled:
         return .none
         
-      case let .setBaseDestinationFolder(url):
-        state.baseDestinationFolder = url
+      case let .setPaxFolder(url):
+        state.paxFolder = url
         return .run { send in
           await send(.loadExistingCustomers)
         }
         
-      case .destinationSelectionCancelled:
+      case .paxSelectionCancelled:
         return .none
         
       case .loadExistingCustomers:
-        guard let baseDir = state.baseDestinationFolder else { return .none }
+        guard let baseDir = state.paxFolder else { return .none }
         return .run { send in
           let result = await fileManager.listContents(baseDir)
           switch result {
@@ -105,7 +105,7 @@ struct PhotoCopyFeature: Reducer {
         return .none
         
       case let .selectExistingCustomer(customer):
-        guard let baseDir = state.baseDestinationFolder else { return .none }
+        guard let baseDir = state.paxFolder else { return .none }
         state.customerInput = customer
         return .run { send in
           let result = await fileManager.getDirectory(baseDir, customer)
@@ -122,7 +122,7 @@ struct PhotoCopyFeature: Reducer {
         return .none
         
       case .createCustomerDirectory:
-        guard let baseDir = state.baseDestinationFolder,
+        guard let baseDir = state.paxFolder,
               !state.customerInput.trimmingCharacters(in: .whitespaces).isEmpty
         else { return .none }
         

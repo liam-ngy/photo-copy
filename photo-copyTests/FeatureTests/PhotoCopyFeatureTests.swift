@@ -12,7 +12,7 @@ struct PhotoCopyFeatureTests {
         
         await #expect(store.state.customerInput == "")
         await #expect(store.state.hasValidCustomerInput == false)
-        await #expect(store.state.baseDestinationFolder == nil)
+        await #expect(store.state.paxFolder == nil)
         await #expect(store.state.canCreateCustomerDirectory == false)
     }
     
@@ -35,8 +35,8 @@ struct PhotoCopyFeatureTests {
         }
         
         let testURL = URL(fileURLWithPath: "/test/path")
-        await store.send(.setBaseDestinationFolder(testURL)) {
-            $0.baseDestinationFolder = testURL
+        await store.send(.setPaxFolder(testURL)) {
+            $0.paxFolder = testURL
         }
         await #expect(store.state.canCreateCustomerDirectory == false)
     }
@@ -48,8 +48,8 @@ struct PhotoCopyFeatureTests {
         }
         
         let testURL = URL(fileURLWithPath: "/test/path")
-        await store.send(.setBaseDestinationFolder(testURL)) {
-            $0.baseDestinationFolder = testURL
+        await store.send(.setPaxFolder(testURL)) {
+            $0.paxFolder = testURL
         }
         
         await store.send(.updateCustomerInput("69 Test")) {

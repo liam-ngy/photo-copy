@@ -18,12 +18,12 @@ struct DestinationFolderView: View {
             allowedContentTypes: [.folder],
             onCompletion: { result in
               if case .success(let url) = result {
-                viewStore.send(.setBaseDestinationFolder(url))
+                viewStore.send(.setPaxFolder(url))
               }
             }
           )
           
-          if let destinationPath = viewStore.baseDestinationFolder?.path {
+          if let destinationPath = viewStore.paxFolder?.path {
             Text(destinationPath)
               .lineLimit(1)
               .truncationMode(.middle)

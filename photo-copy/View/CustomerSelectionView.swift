@@ -8,8 +8,8 @@ struct CustomerSelectionView: View {
     WithViewStore(store, observe: { $0 }) { viewStore in
       GroupBox(label: Text("Customer").font(.headline)) {
         HStack {
-          if viewStore.baseDestinationFolder != nil && viewStore.sourceFolder != nil {
-            Menu(viewStore.isCustomerDirectoryCreated && viewStore.baseDestinationFolder != nil ? "Selected: \(viewStore.customerInput)" : "Select Existing Customer") {
+          if viewStore.paxFolder != nil && viewStore.sourceFolder != nil {
+            Menu(viewStore.isCustomerDirectoryCreated && viewStore.paxFolder != nil ? "Selected: \(viewStore.customerInput)" : "Select Existing Customer") {
               ForEach(viewStore.existingCustomers, id: \.self) { customer in
                 Button(customer) {
                   viewStore.send(.selectExistingCustomer(customer))
