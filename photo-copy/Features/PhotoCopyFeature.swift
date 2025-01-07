@@ -108,6 +108,7 @@ struct PhotoCopyFeature {
       case .clearCustomer:
         state.destinationFolder = nil
         state.customerInput = ""
+        state.lastOperationMessage = ""
         return .none
       }
     }

@@ -60,7 +60,7 @@ struct PhotoCopyFeatureTests {
     
     @Test("Directory creation should succeed with valid inputs")
     func testDirectoryCreationSuccess() async {
-        let store = await TestStore(initialState: PhotoCopyFeature.State()) {
+      _ = await TestStore(initialState: PhotoCopyFeature.State()) {
             PhotoCopyFeature()
         } withDependencies: {
             $0.fileManager.createDirectory = { baseURL, name in
@@ -72,7 +72,7 @@ struct PhotoCopyFeatureTests {
     
     @Test("Directory creation should fail with invalid permissions")
     func testDirectoryCreationFailure() async {
-        let store = await TestStore(initialState: PhotoCopyFeature.State()) {
+      _ = await TestStore(initialState: PhotoCopyFeature.State()) {
             PhotoCopyFeature()
         } withDependencies: {
             $0.fileManager.createDirectory = { _, _ in
@@ -86,5 +86,31 @@ struct PhotoCopyFeatureTests {
         let store = await TestStore(initialState: PhotoCopyFeature.State()) {
             PhotoCopyFeature()
         }
+    }
+    
+    @Test("Clear customer should reset customer-related state")
+    func testClearCustomer() async {
+        let store = await TestStore(initialState: PhotoCopyFeature.State(
+            baseDestinationFolder: URL(fileURLWithPath: "/test/path"),
+            customerInput: "69 Test",
+            destinationFolder: URL(fileURLWithPath: "/test/path/69 Test")
+        )) {
+            PhotoCopyFeature()
+        }
+        
+        // Verify initial state
+        await #expect(store.state.isCustomerDirectoryCreated == true)
+        await #expect(store.state.customerInput == "69 Test")
+        
+        // Send clear action
+        await store.send(.clearCustomer) {
+            $0.destinationFolder = nil
+            $0.customerInput = ""
+            $0.lastOperationMessage = ""
+        }
+        
+        // Verify cleared state
+        await #expect(store.state.isCustomerDirectoryCreated == false)
+        await #expect(store.state.shouldShowCustomerInput == true)
     }
 }
