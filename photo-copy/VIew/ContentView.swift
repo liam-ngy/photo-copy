@@ -2,8 +2,6 @@ import SwiftUI
 import ComposableArchitecture
 
 struct ContentView: View {
-  @StateObject private var viewModel = FileCopyViewModel()
-  
   let store: StoreOf<PhotoCopyFeature>
   
   @State private var showingSourcePicker = false
@@ -20,190 +18,188 @@ struct ContentView: View {
           .padding(.top)
           .padding(.bottom)
         
+        // Source Folder Selection
         GroupBox(label: Text("Source Folder (Photos)").font(.headline)) {
           HStack {
             Button("Choose...") {
               showingSourcePicker.toggle()
             }
             .keyboardShortcut("o", modifiers: .command)
-            .fileImporter(isPresented: $showingSourcePicker, allowedContentTypes: [.folder], onCompletion: { result in
-              switch result {
-              case .success(let url):
-                viewStore.send(.setSourceFolder(url))
-              case .failure(_):
-                viewStore.send(.sourceSelectionCancelled)
-              }
-            })
-            Spacer()
-            Text(viewStore.sourceFolder?.path ?? "No source selected")
-              .foregroundColor(.gray)
-              .padding(.leading)
-          }
-          .padding()
-        }
-        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 60)
-        .padding(.vertical, 5)
-        
-        GroupBox(label: Text("Destination Folder").font(.headline)) {
-          VStack {
-            // Base Destination Folder
-            HStack {
-              Button("Choose Pax Folder") {
-                showingDestinationPicker.toggle()
-              }
-              .keyboardShortcut("o", modifiers: [.command, .shift])
-              .fileImporter(
-                isPresented: $showingDestinationPicker,
-                allowedContentTypes: [.folder],
-                onCompletion: { result in
-                  switch result {
-                  case .success(let url):
-                    viewStore.send(.setBaseDestinationFolder(url))
-                  case .failure(_):
-                    viewStore.send(.destinationSelectionCancelled)
-                  }
+            .fileImporter(
+              isPresented: $showingSourcePicker,
+              allowedContentTypes: [.folder],
+              onCompletion: { result in
+                if case .success(let url) = result {
+                  viewStore.send(.setSourceFolder(url))
                 }
-              )
-              Spacer()
-              Text(viewStore.baseDestinationFolder?.path ?? "No base folder selected")
-                .foregroundColor(.gray)
-                .padding(.leading)
-            }
-            .padding(.bottom, 5)
+              }
+            )
             
-            if let _ = viewModel.baseDestinationFolder {
-              // Always show the Menu and New Customer button
+            if let sourcePath = viewStore.sourceFolder?.path {
+              Text(sourcePath)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            }
+          }
+        }
+        
+        // Base Destination Selection
+        GroupBox(label: Text("Base Destination").font(.headline)) {
+          HStack {
+            Button("Choose...") {
+              showingDestinationPicker.toggle()
+            }
+            .keyboardShortcut("d", modifiers: .command)
+            .fileImporter(
+              isPresented: $showingDestinationPicker,
+              allowedContentTypes: [.folder],
+              onCompletion: { result in
+                if case .success(let url) = result {
+                  viewStore.send(.setBaseDestinationFolder(url))
+                }
+              }
+            )
+            
+            if let destinationPath = viewStore.baseDestinationFolder?.path {
+              Text(destinationPath)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            }
+          }
+        }
+        
+        // Customer Selection and Creation
+        if let _ = viewStore.baseDestinationFolder {
+          GroupBox(label: Text("Customer").font(.headline)) {
+            if viewStore.isCustomerDirectoryCreated {
+              // Show selected customer and New Customer button
               HStack {
-                Menu(viewStore.isCustomerDirectoryCreated ? "Selected: \(viewStore.customerInput)" : "Select Customer") {
-                  ForEach(viewModel.getExistingCustomers(), id: \.self) { customer in
+                Text("Selected: \(viewStore.customerInput)")
+                  .fontWeight(.medium)
+                
+                Button("New Customer") {
+                  viewStore.send(.clearCustomer)
+                }
+                .keyboardShortcut("n", modifiers: [.command, .shift])
+              }
+            } else {
+              // Show customer selection and creation
+              VStack(alignment: .leading, spacing: 10) {
+                Menu("Select Existing Customer") {
+                  ForEach(viewStore.existingCustomers, id: \.self) { customer in
                     Button(customer) {
-                      Task {
-                        _ = await viewModel.selectExistingCustomer(customer)
-                      }
+                      viewStore.send(.selectExistingCustomer(customer))
                     }
                   }
+                }
+                .onAppear {
+                  viewStore.send(.loadExistingCustomers)
                 }
                 
-                // Always show New Customer button when a customer is selected
-                if viewStore.isCustomerDirectoryCreated {
-                  Button("New Customer") {
-                    viewStore.send(.clearCustomer)
-                  }
-                  .keyboardShortcut("n", modifiers: [.command, .shift])
-                }
-              }
-              .padding(.vertical, 5)
-              
-              // Show input field when no customer is selected
-              if viewStore.shouldShowCustomerInput {
                 HStack {
-                  TextField(
-                    "Enter customer (e.g., 69 Liam)",
-                    text: viewStore.binding(get: \.customerInput, send: { .updateCustomerInput($0) })
+                  TextField("Enter customer name",
+                            text: viewStore.binding(
+                              get: \.customerInput,
+                              send: { .updateCustomerInput($0) }
+                            )
                   )
                   .textFieldStyle(.roundedBorder)
-                  .frame(maxWidth: 300)
                   .focused($isCustomerInputFocused)
-                  .onSubmit {
-                    if viewStore.canCreateCustomerDirectory {
-                      viewStore.send(.createCustomerDirectory)
-                    }
-                  }
                   
                   Button("Create") {
                     viewStore.send(.createCustomerDirectory)
                   }
                   .disabled(!viewStore.canCreateCustomerDirectory)
                 }
-                
-                Text("Create a customer directory to continue")
-                  .foregroundColor(.orange)
-                  .padding(.top, 5)
               }
             }
           }
-          .padding()
         }
-        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 60)
-        .padding(.vertical, 5)
         
+        // Photo Selection and Copy
         if viewStore.canProceedToPhotos {
           GroupBox(label: Text("Photos").font(.headline)) {
-            TextField("Enter photo range or single photos (e.g. 1, 1-10)", text: $viewModel.photoInput)
-              .textFieldStyle(.roundedBorder)
-              .frame(height: 40)
-              .padding()
-              .focused($isPhotoInputFocused)
-              .onSubmit {
-                Task {
-                  _ = await viewModel.copyPhotos()
+            TextField("Enter photo range or single photos (e.g. 1, 1-10)",
+                      text: viewStore.binding(
+                        get: \.photoInput,
+                        send: { .updatePhotoInput($0) }
+                      )
+            )
+            .textFieldStyle(.roundedBorder)
+            .focused($isPhotoInputFocused)
+            .onSubmit {
+              viewStore.send(.copyPhotos)
+            }
+            
+            Button(action: {
+              viewStore.send(.copyPhotos)
+            }) {
+              Text(viewStore.copyState.isCopying ? "Copying..." : "Copy Photos")
+                .frame(maxWidth: .infinity)
+                .padding()
+                .foregroundColor(.white)
+                .background(viewStore.copyState.isCopying ? Color.gray : Color.blue)
+                .cornerRadius(8)
+            }
+            .disabled(viewStore.copyState.isCopying)
+            .padding(.top)
+            
+            // Result Display
+            if case let .completed(result) = viewStore.copyState {
+              GroupBox(label: Text("Operation Result").font(.headline)) {
+                VStack(alignment: .leading, spacing: 10) {
+                  switch result {
+                  case .success(let files):
+                    Text("✅ Successfully copied \(files.count) files:")
+                      .fontWeight(.medium)
+                    ScrollView {
+                      Text(files.joined(separator: "\n"))
+                        .font(.system(.body, design: .monospaced))
+                    }
+                    
+                  case .partialSuccess(let copied, let missing):
+                    Text("⚠️ Partially completed:")
+                      .fontWeight(.medium)
+                    Text("Copied (\(copied.count)):")
+                      .fontWeight(.medium)
+                    ScrollView {
+                      Text(copied.joined(separator: "\n"))
+                        .font(.system(.body, design: .monospaced))
+                    }
+                    Text("Missing (\(missing.count)):")
+                      .fontWeight(.medium)
+                      .foregroundColor(.red)
+                    ScrollView {
+                      Text(missing.joined(separator: "\n"))
+                        .font(.system(.body, design: .monospaced))
+                        .foregroundColor(.red)
+                    }
+                    
+                  case .failure(let error):
+                    Text("❌ Error:")
+                      .fontWeight(.medium)
+                      .foregroundColor(.red)
+                    Text(error.description)
+                      .foregroundColor(.red)
+                  }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
               }
+              .frame(maxHeight: 200)
+            }
           }
-          .frame(minWidth: 0, maxWidth: .infinity, minHeight: 60)
-          .padding(.vertical, 5)
-          
         }
         
-        if !viewStore.lastOperationMessage.isEmpty {
-          Text(viewStore.lastOperationMessage)
-                .foregroundColor(.green)
-                .padding()
-                .frame(minHeight: 50)
-        }
-
-        if let result = viewModel.result, !viewModel.isBusy {
-            Text(result.description)
-                .foregroundColor(result.color)
-                .padding()
-                .frame(minHeight: 50)
-        }
-        
-        if let result = viewModel.result, !viewModel.isBusy {
-          Text(result.description)
-            .foregroundColor(result.color)
-            .padding()
-            .frame(minHeight: 50)
-        }
-        
-        Button(action: {
-          Task {
-            _ = await viewModel.copyPhotos()
-          }
-        }) {
-          Text(viewModel.isBusy ? "Copying..." : "Copy Photos")
-            .frame(maxWidth: .infinity)
-            .padding()
-            .foregroundColor(.white)
-            .background(viewModel.isBusy ? Color.gray : Color.blue)
-            .cornerRadius(8)
-        }
-        .disabled(viewModel.isBusy)
-        .padding(.top)
+        Spacer()
       }
       .padding()
       .frame(minWidth: 400, minHeight: 500)
-      .onChange(of: viewModel.destinationFolder) { _ in
-        if viewModel.destinationFolder == nil {
+      .onChange(of: viewStore.destinationFolder) { _ in
+        if viewStore.destinationFolder == nil {
           isCustomerInputFocused = true
         }
       }
-      .onChange(of: viewModel.shouldFocusPhotoInput) { shouldFocus in
-        isPhotoInputFocused = shouldFocus
-      }
-    }
-  }
-}
-
-extension FileCopyService.FileCopyResult {
-  var color: Color {
-    switch self {
-    case .success:
-      return .green
-    case .failure:
-      return .red
-    case .partialSuccess(copiedFiles: _, missingFiles: _):
-      return .green
     }
   }
 }

@@ -1,50 +1,14 @@
-import ComposableArchitecture
 import Foundation
+import ComposableArchitecture
 
-@Reducer
-struct PhotoCopyFeature {
-  @Dependency(\.fileManager) var fileManager
-  
+struct PhotoCopyFeature: Reducer {
   struct State: Equatable {
-    enum CopyState: Equatable {
-        case idle
-        case copying
-        case completed(FileCopyService.FileCopyResult)
-        
-        var isCopying: Bool {
-            if case .copying = self {
-                return true
-            }
-            return false
-        }
-        
-        var isCompleted: Bool {
-            if case .completed = self {
-                return true
-            }
-            return false
-        }
-        
-        var message: String {
-            switch self {
-            case .idle:
-                return ""
-            case .copying:
-                return "Copying photos..."
-            case .completed(let result):
-                return FileCopyMessageBuilder.buildMessage(for: result)
-            }
-        }
-    }
-    
-    var sourceFolder: URL? = nil
-    var baseDestinationFolder: URL? = nil
-    var destinationFolder: URL? = nil
-    
+    var sourceFolder: URL?
+    var baseDestinationFolder: URL?
+    var destinationFolder: URL?
     var customerInput: String = ""
-    var lastOperationMessage: String = ""
-    
     var photoInput: String = ""
+    var existingCustomers: [String] = []
     var copyState: CopyState = .idle
     
     var hasValidCustomerInput: Bool {
@@ -67,7 +31,18 @@ struct PhotoCopyFeature {
       isCustomerDirectoryCreated
     }
     
-    
+    enum CopyState: Equatable {
+      case idle
+      case copying
+      case completed(FileCopyService.FileCopyResult)
+      
+      var isCopying: Bool {
+        if case .copying = self {
+          return true
+        }
+        return false
+      }
+    }
   }
   
   enum Action: Equatable {
@@ -75,6 +50,10 @@ struct PhotoCopyFeature {
     case sourceSelectionCancelled
     case setBaseDestinationFolder(URL)
     case destinationSelectionCancelled
+    
+    case loadExistingCustomers
+    case existingCustomersLoaded([String])
+    case selectExistingCustomer(String)
     
     case updateCustomerInput(String)
     case createCustomerDirectory
@@ -88,6 +67,7 @@ struct PhotoCopyFeature {
     case copyPhotosCompleted(FileCopyService.FileCopyResult)
   }
   
+  @Dependency(\.fileManager) var fileManager
   
   var body: some Reducer<State, Action> {
     Reduce { state, action in
@@ -101,32 +81,34 @@ struct PhotoCopyFeature {
         
       case let .setBaseDestinationFolder(url):
         state.baseDestinationFolder = url
-        return .none
+        return .run { send in
+          await send(.loadExistingCustomers)
+        }
         
       case .destinationSelectionCancelled:
         return .none
         
-      case let .updateCustomerInput(input):
-        state.customerInput = input
+      case .loadExistingCustomers:
+        guard let baseDir = state.baseDestinationFolder else { return .none }
+        return .run { send in
+          let result = await fileManager.listContents(baseDir)
+          switch result {
+          case .success(let customers):
+            await send(.existingCustomersLoaded(customers))
+          case .failure:
+            await send(.existingCustomersLoaded([]))
+          }
+        }
+        
+      case let .existingCustomersLoaded(customers):
+        state.existingCustomers = customers
         return .none
         
-      case .createCustomerDirectory:
-        print("⚡️ Creating directory...") // Debug log
-        guard let baseDestination = state.baseDestinationFolder else {
-          print("❌ No base destination") // Debug log
-          return .send(.customerDirectoryFailed(.invalidDestination))
-        }
-        
-        let trimmedInput = state.customerInput.trimmingCharacters(in: .whitespaces)
-        guard !trimmedInput.isEmpty else {
-          print("❌ Empty input") // Debug log
-          return .send(.customerDirectoryFailed(.invalidCustomerInput))
-        }
-        
-        return .run { [trimmedInput] send in
-          print("🏃‍♂️ Running directory creation...") // Debug log
-          let result = await self.fileManager.createDirectory(baseDestination, trimmedInput)
-          print("📝 Result: \(result)") // Debug log
+      case let .selectExistingCustomer(customer):
+        guard let baseDir = state.baseDestinationFolder else { return .none }
+        state.customerInput = customer
+        return .run { send in
+          let result = await fileManager.getDirectory(baseDir, customer)
           switch result {
           case .success(let url):
             await send(.customerDirectoryCreated(url))
@@ -135,20 +117,36 @@ struct PhotoCopyFeature {
           }
         }
         
+      case let .updateCustomerInput(input):
+        state.customerInput = input
+        return .none
+        
+      case .createCustomerDirectory:
+        guard let baseDir = state.baseDestinationFolder,
+              !state.customerInput.trimmingCharacters(in: .whitespaces).isEmpty
+        else { return .none }
+        
+        return .run { [customerInput = state.customerInput] send in
+          let result = await fileManager.createDirectory(baseDir, customerInput)
+          switch result {
+          case .success(let url):
+            await send(.customerDirectoryCreated(url))
+          case .failure(let error):
+            await send(.customerDirectoryFailed(error))
+          }
+        }
         
       case let .customerDirectoryCreated(url):
         state.destinationFolder = url
-        state.lastOperationMessage = "Directory was created successfully"
         return .none
         
-      case let .customerDirectoryFailed(error):
-        state.lastOperationMessage = error.description
+      case .customerDirectoryFailed:
         return .none
         
       case .clearCustomer:
-        state.destinationFolder = nil
         state.customerInput = ""
-        state.lastOperationMessage = ""
+        state.destinationFolder = nil
+        state.copyState = .idle
         return .none
         
       case let .updatePhotoInput(input):
@@ -156,35 +154,32 @@ struct PhotoCopyFeature {
         return .none
         
       case .copyPhotos:
-        guard let source = state.sourceFolder, let destination = state.destinationFolder else {
+        guard let source = state.sourceFolder,
+              let destination = state.destinationFolder else {
           state.copyState = .completed(.failure(.invalidSource))
           return .none
         }
         
         state.copyState = .copying
+        
         switch PhotoInputParser.parseToFileNames(state.photoInput) {
         case .success(let photos):
-            if photos.isEmpty {
-                state.copyState = .completed(.failure(.invalidPhotoRange))
-                return .none
-            }
-            
-            return .run { send in
-                let result = await FileCopyService.copyFiles(
-                    from: source,
-                    to: destination,
-                    files: photos
-                )
-                await send(.copyPhotosCompleted(result))
-            }
-            
-        case let .failure(error):
-          let copyError: FileCopyService.FileCopyError = switch error {
-          case .emptyInput, .invalidFormat, .invalidRange, .negativeNumber:
-              .invalidPhotoRange
+          if photos.isEmpty {
+            state.copyState = .completed(.failure(.invalidPhotoRange))
+            return .none
           }
           
-          state.copyState = .completed(.failure(copyError))
+          return .run { send in
+            let result = await FileCopyService.copyFiles(
+              from: source,
+              to: destination,
+              files: photos
+            )
+            await send(.copyPhotosCompleted(result))
+          }
+          
+        case .failure:
+          state.copyState = .completed(.failure(.invalidPhotoRange))
           return .none
         }
         

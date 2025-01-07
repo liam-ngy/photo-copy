@@ -39,7 +39,7 @@ enum FileCopyService {
     }
     defer { destination.stopAccessingSecurityScopedResource() }
     
-    let fileNames = files.map { "rex-\($0).jpg" }
+    let fileNames = files
     
     for file in fileNames {
       let sourceFilePath = source.appendingPathComponent(file)
