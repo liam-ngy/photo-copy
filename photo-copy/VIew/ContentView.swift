@@ -29,9 +29,8 @@ struct ContentView: View {
             .fileImporter(isPresented: $showingSourcePicker, allowedContentTypes: [.folder], onCompletion: { result in
               switch result {
               case .success(let url):
-                // TODO: Needs to be removed
-                viewModel.sourceFolder = url
                 viewStore.send(.setSourceFolder(url))
+                viewModel.sourceFolder = url
               case .failure(_):
                 viewStore.send(.sourceSelectionCancelled)
               }
@@ -60,8 +59,8 @@ struct ContentView: View {
                 onCompletion: { result in
                   switch result {
                   case .success(let url):
-                    viewModel.baseDestinationFolder = url
                     viewStore.send(.setBaseDestinationFolder(url))
+                    viewModel.baseDestinationFolder = url
                   case .failure(_):
                     viewStore.send(.destinationSelectionCancelled)
                   }
@@ -101,13 +100,17 @@ struct ContentView: View {
               // Show input field when no customer is selected
               if viewModel.destinationFolder == nil {
                 HStack {
-                  TextField("Enter customer (e.g., 69 Liam)", text: $viewModel.customerInput)
+                  TextField(
+                    "Enter customer (e.g., 69 Liam)",
+                    text: viewStore.binding(get: \.customerInput, send: { .updateCustomerInput($0) })
+                  )
                     .textFieldStyle(.roundedBorder)
                     .frame(maxWidth: 300)
                     .focused($isCustomerInputFocused)
                     .onSubmit {
-                      if !viewModel.customerInput.isEmpty && viewModel.baseDestinationFolder != nil {
+                      if viewStore.canCreateCustomerDirectory {
                         Task {
+                          viewStore.send(.createCustomerDirectory)
                           _ = await viewModel.createCustomerDirectory()
                         }
                       }
@@ -115,10 +118,11 @@ struct ContentView: View {
                   
                   Button("Create") {
                     Task {
+                      viewStore.send(.createCustomerDirectory)
                       _ = await viewModel.createCustomerDirectory()
                     }
                   }
-                  .disabled(viewModel.customerInput.isEmpty || viewModel.baseDestinationFolder == nil)
+                  .disabled(!viewStore.canCreateCustomerDirectory)
                 }
                 
                 Text("Create a customer directory to continue")

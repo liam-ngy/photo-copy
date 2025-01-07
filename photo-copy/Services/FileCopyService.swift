@@ -80,6 +80,29 @@ enum FileCopyService {
 
 // MARK: - Error
 
+extension FileCopyService.FileCopyError: Equatable {
+  // Add this if Swift can't synthesize Equatable automatically
+  static func == (lhs: FileCopyService.FileCopyError, rhs: FileCopyService.FileCopyError) -> Bool {
+      switch (lhs, rhs) {
+      case (.invalidSource, .invalidSource),
+           (.invalidDestination, .invalidDestination),
+           (.insufficientPermissions, .insufficientPermissions),
+           (.invalidPhotoRange, .invalidPhotoRange),
+           (.customerDirectoryCreationFailed, .customerDirectoryCreationFailed),
+           (.invalidCustomerInput, .invalidCustomerInput):
+          return true
+      case (.fileNotFound(let l), .fileNotFound(let r)):
+          return l == r
+      case (.copyFailed(let l), .copyFailed(let r)):
+          return l == r
+      case (.unknownError(let l), .unknownError(let r)):
+          return l == r
+      default:
+          return false
+      }
+  }
+}
+
 extension FileCopyService.FileCopyError: CustomStringConvertible {
       var description: String {
       switch self {
