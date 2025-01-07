@@ -6,11 +6,46 @@ struct PhotoCopyFeature {
   @Dependency(\.fileManager) var fileManager
   
   struct State: Equatable {
+    enum CopyState: Equatable {
+        case idle
+        case copying
+        case completed(FileCopyService.FileCopyResult)
+        
+        var isCopying: Bool {
+            if case .copying = self {
+                return true
+            }
+            return false
+        }
+        
+        var isCompleted: Bool {
+            if case .completed = self {
+                return true
+            }
+            return false
+        }
+        
+        var message: String {
+            switch self {
+            case .idle:
+                return ""
+            case .copying:
+                return "Copying photos..."
+            case .completed(let result):
+                return FileCopyMessageBuilder.buildMessage(for: result)
+            }
+        }
+    }
+    
     var sourceFolder: URL? = nil
     var baseDestinationFolder: URL? = nil
-    var customerInput: String = ""
     var destinationFolder: URL? = nil
+    
+    var customerInput: String = ""
     var lastOperationMessage: String = ""
+    
+    var photoInput: String = ""
+    var copyState: CopyState = .idle
     
     var hasValidCustomerInput: Bool {
       !customerInput.trimmingCharacters(in: .whitespaces).isEmpty
@@ -32,6 +67,7 @@ struct PhotoCopyFeature {
       isCustomerDirectoryCreated
     }
     
+    
   }
   
   enum Action: Equatable {
@@ -46,6 +82,10 @@ struct PhotoCopyFeature {
     case customerDirectoryFailed(FileCopyService.FileCopyError)
     
     case clearCustomer
+    
+    case updatePhotoInput(String)
+    case copyPhotos
+    case copyPhotosCompleted(FileCopyService.FileCopyResult)
   }
   
   
@@ -109,6 +149,47 @@ struct PhotoCopyFeature {
         state.destinationFolder = nil
         state.customerInput = ""
         state.lastOperationMessage = ""
+        return .none
+        
+      case let .updatePhotoInput(input):
+        state.photoInput = input
+        return .none
+        
+      case .copyPhotos:
+        guard let source = state.sourceFolder, let destination = state.destinationFolder else {
+          state.copyState = .completed(.failure(.invalidSource))
+          return .none
+        }
+        
+        state.copyState = .copying
+        switch PhotoInputParser.parseToFileNames(state.photoInput) {
+        case .success(let photos):
+            if photos.isEmpty {
+                state.copyState = .completed(.failure(.invalidPhotoRange))
+                return .none
+            }
+            
+            return .run { send in
+                let result = await FileCopyService.copyFiles(
+                    from: source,
+                    to: destination,
+                    files: photos
+                )
+                await send(.copyPhotosCompleted(result))
+            }
+            
+        case let .failure(error):
+          let copyError: FileCopyService.FileCopyError = switch error {
+          case .emptyInput, .invalidFormat, .invalidRange, .negativeNumber:
+              .invalidPhotoRange
+          }
+          
+          state.copyState = .completed(.failure(copyError))
+          return .none
+        }
+        
+      case let .copyPhotosCompleted(result):
+        state.copyState = .completed(result)
         return .none
       }
     }

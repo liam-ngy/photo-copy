@@ -13,7 +13,7 @@ enum FileCopyService {
     case invalidCustomerInput
   }
   
-  enum FileCopyResult {
+  enum FileCopyResult: Equatable {
     case success([String])
     case partialSuccess(copiedFiles: [String], missingFiles: [String])
     case failure(FileCopyError)

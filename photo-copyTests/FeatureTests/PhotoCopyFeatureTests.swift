@@ -92,8 +92,8 @@ struct PhotoCopyFeatureTests {
     func testClearCustomer() async {
         let store = await TestStore(initialState: PhotoCopyFeature.State(
             baseDestinationFolder: URL(fileURLWithPath: "/test/path"),
-            customerInput: "69 Test",
-            destinationFolder: URL(fileURLWithPath: "/test/path/69 Test")
+            destinationFolder: URL(fileURLWithPath: "/test/path/69 Test"), 
+            customerInput: "69 Test"
         )) {
             PhotoCopyFeature()
         }
