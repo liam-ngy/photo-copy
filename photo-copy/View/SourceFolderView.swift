@@ -18,12 +18,12 @@ struct SourceFolderView: View {
             allowedContentTypes: [.folder],
             onCompletion: { result in
               if case .success(let url) = result {
-                viewStore.send(.setSourceFolder(url))
+                viewStore.send(.setFinalsFolder(url))
               }
             }
           )
           
-          if let sourcePath = viewStore.sourceFolder?.path {
+          if let sourcePath = viewStore.finalsFolder?.path {
             Text(sourcePath)
               .lineLimit(1)
               .truncationMode(.middle)

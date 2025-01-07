@@ -3,7 +3,7 @@ import ComposableArchitecture
 
 struct PhotoCopyFeature: Reducer {
   struct State: Equatable {
-    var sourceFolder: URL?
+    var finalsFolder: URL?
     var paxFolder: URL?
     var destinationFolder: URL?
     var customerInput: String = ""
@@ -46,8 +46,8 @@ struct PhotoCopyFeature: Reducer {
   }
   
   enum Action: Equatable {
-    case setSourceFolder(URL)
-    case sourceSelectionCancelled
+    case setFinalsFolder(URL)
+    case finalsSelectionCancelled
     case setPaxFolder(URL)
     case paxSelectionCancelled
     
@@ -72,11 +72,11 @@ struct PhotoCopyFeature: Reducer {
   var body: some Reducer<State, Action> {
     Reduce { state, action in
       switch action {
-      case let .setSourceFolder(url):
-        state.sourceFolder = url
+      case let .setFinalsFolder(url):
+        state.finalsFolder = url
         return .none
         
-      case .sourceSelectionCancelled:
+      case .finalsSelectionCancelled:
         return .none
         
       case let .setPaxFolder(url):
@@ -154,7 +154,7 @@ struct PhotoCopyFeature: Reducer {
         return .none
         
       case .copyPhotos:
-        guard let source = state.sourceFolder,
+        guard let source = state.finalsFolder,
               let destination = state.destinationFolder else {
           state.copyState = .completed(.failure(.invalidSource))
           return .none
