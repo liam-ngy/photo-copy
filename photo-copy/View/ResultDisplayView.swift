@@ -58,7 +58,7 @@ struct ResultDisplayView: View {
                     .foregroundColor(.red)
                   ForEach(missing, id: \.self) { file in
                     HStack {
-                      Image(systemName: "photo.slash")
+                      Image(systemName: "photo.badge.exclamationmark")
                         .foregroundColor(.red)
                       Text(file)
                         .font(.system(.body, design: .monospaced))
