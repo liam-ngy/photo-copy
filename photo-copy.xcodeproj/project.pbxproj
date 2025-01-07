@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		660781B22D2CA98600BE87C3 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 660781B12D2CA98600BE87C3 /* ComposableArchitecture */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		6686BAF22D276830006550D8 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -53,6 +57,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				660781B22D2CA98600BE87C3 /* ComposableArchitecture in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -114,6 +119,7 @@
 			);
 			name = "photo-copy";
 			packageProductDependencies = (
+				660781B12D2CA98600BE87C3 /* ComposableArchitecture */,
 			);
 			productName = "photo-copy";
 			productReference = 6686BADE2D27682F006550D8 /* photo-copy.app */;
@@ -197,6 +203,9 @@
 			);
 			mainGroup = 6686BAD52D27682E006550D8;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				660781B02D2CA98600BE87C3 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6686BADF2D27682F006550D8 /* Products */;
 			projectDirPath = "";
@@ -549,6 +558,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		660781B02D2CA98600BE87C3 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-composable-architecture";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.17.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		660781B12D2CA98600BE87C3 /* ComposableArchitecture */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 660781B02D2CA98600BE87C3 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
+			productName = ComposableArchitecture;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 6686BAD62D27682E006550D8 /* Project object */;
 }
