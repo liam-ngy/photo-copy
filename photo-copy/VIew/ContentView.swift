@@ -98,23 +98,23 @@ struct ContentView: View {
               .padding(.vertical, 5)
               
               // Show input field when no customer is selected
-              if viewModel.destinationFolder == nil {
+              if viewStore.shouldShowCustomerInput {
                 HStack {
                   TextField(
                     "Enter customer (e.g., 69 Liam)",
                     text: viewStore.binding(get: \.customerInput, send: { .updateCustomerInput($0) })
                   )
-                    .textFieldStyle(.roundedBorder)
-                    .frame(maxWidth: 300)
-                    .focused($isCustomerInputFocused)
-                    .onSubmit {
-                      if viewStore.canCreateCustomerDirectory {
-                        Task {
-                          viewStore.send(.createCustomerDirectory)
-                          _ = await viewModel.createCustomerDirectory()
-                        }
+                  .textFieldStyle(.roundedBorder)
+                  .frame(maxWidth: 300)
+                  .focused($isCustomerInputFocused)
+                  .onSubmit {
+                    if viewStore.canCreateCustomerDirectory {
+                      Task {
+                        viewStore.send(.createCustomerDirectory)
+                        _ = await viewModel.createCustomerDirectory()
                       }
                     }
+                  }
                   
                   Button("Create") {
                     Task {
@@ -136,20 +136,37 @@ struct ContentView: View {
         .frame(minWidth: 0, maxWidth: .infinity, minHeight: 60)
         .padding(.vertical, 5)
         
-        GroupBox(label: Text("Photos").font(.headline)) {
-          TextField("Enter photo range or single photos (e.g. 1, 1-10)", text: $viewModel.photoInput)
-            .textFieldStyle(.roundedBorder)
-            .frame(height: 40)
-            .padding()
-            .focused($isPhotoInputFocused)
-            .onSubmit {
-              Task {
-                _ = await viewModel.copyPhotos()
+        if viewStore.canProceedToPhotos {
+          GroupBox(label: Text("Photos").font(.headline)) {
+            TextField("Enter photo range or single photos (e.g. 1, 1-10)", text: $viewModel.photoInput)
+              .textFieldStyle(.roundedBorder)
+              .frame(height: 40)
+              .padding()
+              .focused($isPhotoInputFocused)
+              .onSubmit {
+                Task {
+                  _ = await viewModel.copyPhotos()
+                }
               }
-            }
+          }
+          .frame(minWidth: 0, maxWidth: .infinity, minHeight: 60)
+          .padding(.vertical, 5)
+          
         }
-        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 60)
-        .padding(.vertical, 5)
+        
+        if !viewStore.lastOperationMessage.isEmpty {
+          Text(viewStore.lastOperationMessage)
+                .foregroundColor(.green)
+                .padding()
+                .frame(minHeight: 50)
+        }
+
+        if let result = viewModel.result, !viewModel.isBusy {
+            Text(result.description)
+                .foregroundColor(result.color)
+                .padding()
+                .frame(minHeight: 50)
+        }
         
         if let result = viewModel.result, !viewModel.isBusy {
           Text(result.description)
@@ -191,9 +208,9 @@ extension FileCopyService.FileCopyResult {
   var color: Color {
     switch self {
     case .success:
-        return .green
+      return .green
     case .failure:
-        return .red
+      return .red
     case .partialSuccess(copiedFiles: _, missingFiles: _):
       return .green
     }

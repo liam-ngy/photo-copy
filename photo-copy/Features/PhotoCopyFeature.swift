@@ -10,14 +10,28 @@ struct PhotoCopyFeature {
     var baseDestinationFolder: URL? = nil
     var customerInput: String = ""
     var destinationFolder: URL? = nil
+    var lastOperationMessage: String = ""
     
     var hasValidCustomerInput: Bool {
-        !customerInput.trimmingCharacters(in: .whitespaces).isEmpty
+      !customerInput.trimmingCharacters(in: .whitespaces).isEmpty
     }
     
     var canCreateCustomerDirectory: Bool {
-        hasValidCustomerInput && baseDestinationFolder != nil
+      hasValidCustomerInput && baseDestinationFolder != nil
     }
+    
+    var isCustomerDirectoryCreated: Bool {
+      destinationFolder != nil
+    }
+    
+    var shouldShowCustomerInput: Bool {
+      !isCustomerDirectoryCreated
+    }
+    
+    var canProceedToPhotos: Bool {
+      isCustomerDirectoryCreated
+    }
+    
   }
   
   enum Action: Equatable {
@@ -55,17 +69,22 @@ struct PhotoCopyFeature {
         return .none
         
       case .createCustomerDirectory:
+        print("⚡️ Creating directory...") // Debug log
         guard let baseDestination = state.baseDestinationFolder else {
+          print("❌ No base destination") // Debug log
           return .send(.customerDirectoryFailed(.invalidDestination))
         }
         
-        let trimmedInput =  state.customerInput.trimmingCharacters(in: .whitespaces)
+        let trimmedInput = state.customerInput.trimmingCharacters(in: .whitespaces)
         guard !trimmedInput.isEmpty else {
+          print("❌ Empty input") // Debug log
           return .send(.customerDirectoryFailed(.invalidCustomerInput))
         }
         
         return .run { [trimmedInput] send in
-          let result = await fileManager.createDirectory(baseDestination, trimmedInput)
+          print("🏃‍♂️ Running directory creation...") // Debug log
+          let result = await self.fileManager.createDirectory(baseDestination, trimmedInput)
+          print("📝 Result: \(result)") // Debug log
           switch result {
           case .success(let url):
             await send(.customerDirectoryCreated(url))
@@ -77,9 +96,11 @@ struct PhotoCopyFeature {
         
       case let .customerDirectoryCreated(url):
         state.destinationFolder = url
+        state.lastOperationMessage = "Directory was created successfully"
         return .none
         
-      case .customerDirectoryFailed(_):
+      case let .customerDirectoryFailed(error):
+        state.lastOperationMessage = error.description
         return .none
       }
     }
