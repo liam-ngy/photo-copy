@@ -6,6 +6,7 @@ struct ContentView: View {
   @State private var showingSourcePicker = false
   @State private var showingDestinationPicker = false
   @FocusState private var isCustomerInputFocused: Bool
+  @FocusState private var isPhotoInputFocused: Bool
   
   var body: some View {
     VStack(alignment: .leading) {
@@ -129,6 +130,7 @@ struct ContentView: View {
           .textFieldStyle(.roundedBorder)
           .frame(height: 40)
           .padding()
+          .focused($isPhotoInputFocused)
           .onSubmit {
             Task {
               _ = await viewModel.copyPhotos()
@@ -166,6 +168,9 @@ struct ContentView: View {
       if viewModel.destinationFolder == nil {
         isCustomerInputFocused = true
       }
+    }
+    .onChange(of: viewModel.shouldFocusPhotoInput) { shouldFocus in
+      isPhotoInputFocused = shouldFocus
     }
   }
 }

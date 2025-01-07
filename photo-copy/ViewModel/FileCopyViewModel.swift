@@ -40,6 +40,8 @@ final class FileCopyViewModel: ObservableObject {
     }
   }
   
+  @Published private(set) var shouldFocusPhotoInput: Bool = false
+  
   // MARK: - Private Properties
   
   private let fileManager: FileManaging
@@ -52,10 +54,6 @@ final class FileCopyViewModel: ObservableObject {
   
   var shouldFocusCustomerInput: Bool {
     viewState == .customerInputRequired
-  }
-  
-  var shouldFocusPhotoInput: Bool {
-    viewState == .photoInputRequired
   }
   
   // MARK: - Initializer
@@ -94,6 +92,7 @@ final class FileCopyViewModel: ObservableObject {
     case .success(let secureURL):
       destinationFolder = secureURL
       customerInput = customerDir
+      shouldFocusPhotoInput = true
       return .success(())
     case .failure(let error):
       return .failure(error)
@@ -113,6 +112,7 @@ final class FileCopyViewModel: ObservableObject {
     switch fileManager.createDirectory(at: baseDestination, withName: trimmedInput) {
     case .success(let secureURL):
       destinationFolder = secureURL
+      shouldFocusPhotoInput = true
       return .success(())
     case .failure(let error):
       return .failure(error)
