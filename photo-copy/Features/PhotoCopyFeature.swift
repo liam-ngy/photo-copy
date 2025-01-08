@@ -5,15 +5,8 @@ struct PhotoCopyFeature: Reducer {
   struct State: Equatable {
     var baseFolder: URL?
     
-    var finalsFolder: URL? {
-      guard let base = baseFolder else { return nil }
-      return base.appendingPathComponent("finals")
-    }
-    
-    var paxFolder: URL? {
-      guard let base = baseFolder else { return nil }
-      return base.appendingPathComponent("pax")
-    }
+    var finalsFolder: URL?
+    var paxFolder: URL?
     
     var destinationFolder: URL?
     var customerInput: String = ""
@@ -61,10 +54,15 @@ struct PhotoCopyFeature: Reducer {
     case setBaseFolder(URL)
     case baseSelectionCancelled
     
+    case setFinalsFolder(URL)
+    case setPaxFolder(URL)
+
     case finalsSelectionCancelled
     case paxSelectionCancelled
     
-    case loadExistingCustomers
+    case requiredFoldersFailed(FileCopyService.FileCopyError)
+    
+    case loadExistingCustomers(URL)
     case existingCustomersLoaded([String])
     case selectExistingCustomer(String)
     
@@ -89,11 +87,27 @@ struct PhotoCopyFeature: Reducer {
         state.baseFolder = url
         
         return .run { send in
-          await send(.loadExistingCustomers)
+          switch await fileManager.getDirectory(url, "pax") {
+          case let .success(url):
+            await send(.setPaxFolder(url))
+            
+          case let .failure(error):
+            await send(.requiredFoldersFailed(error))
+          }
         }
-
         
       case .baseSelectionCancelled:
+        return .none
+        
+      case let .setPaxFolder(url):
+        state.paxFolder = url
+        return .run { send in
+          
+          await send(.loadExistingCustomers(url))
+        }
+        
+      case let .setFinalsFolder(url):
+        state.finalsFolder = url
         return .none
         
       case .finalsSelectionCancelled:
@@ -102,21 +116,15 @@ struct PhotoCopyFeature: Reducer {
       case .paxSelectionCancelled:
         return .none
         
-      case .loadExistingCustomers:
-        guard let baseFolder = state.baseFolder else {
-          return .none
-        }
+      case .requiredFoldersFailed:
+        return .none
+        
+      case let .loadExistingCustomers(paxDir):
         return .run { send in
-          switch await fileManager.getDirectory(baseFolder, "pax") {
-          case let .success(paxDir):
-            switch await fileManager.listContents(paxDir) {
+          switch await fileManager.listContents(paxDir) {
             case let .success(customers):
               await send(.existingCustomersLoaded(customers))
               
-            case let .failure(error):
-              print(error)
-              await send(.existingCustomersLoaded([]))
-            }
           case let .failure(error):
             // TODO: Is that the correct way to handle it like this
             print(error)

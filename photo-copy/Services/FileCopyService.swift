@@ -11,6 +11,7 @@ enum FileCopyService {
     case unknownError(String)
     case customerDirectoryCreationFailed
     case invalidCustomerInput
+    case directoryNotFound
   }
   
   enum FileCopyResult: Equatable {
@@ -124,6 +125,8 @@ extension FileCopyService.FileCopyError: CustomStringConvertible {
         return "Couldn't create directory"
       case .invalidCustomerInput:
       return "Invalid customer input"
+      case .directoryNotFound:
+        return "Pax or Finals directory not found"
       }
     }
 

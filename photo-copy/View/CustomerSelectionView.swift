@@ -17,9 +17,6 @@ struct CustomerSelectionView: View {
                 }
               }
             }
-            .onAppear {
-              viewStore.send(.loadExistingCustomers)
-            }
           }
             
           

@@ -27,10 +27,17 @@ final class SecureFileManager: FileManaging {
     }
     
     func getDirectory(at baseURL: URL, withName name: String) -> Result<URL, FileCopyService.FileCopyError> {
-        SecurityScopedHelper.access(baseURL) {
-            let dirURL = baseURL.appendingPathComponent(name)
+      let dirURL = baseURL.appendingPathComponent(name)
+      
+      switch checkDirectory(at: dirURL) {
+      case let .success(url):
+        return SecurityScopedHelper.access(baseURL) {
             return SecurityScopedHelper.createSecureBookmark(for: dirURL)
         }
+        
+      case let .failure(error):
+        return .failure(error)
+      }
     }
     
     func listContents(of url: URL) -> Result<[String], FileCopyService.FileCopyError> {
@@ -46,4 +53,21 @@ final class SecureFileManager: FileManaging {
             }
         }
     }
+  
+  func checkDirectory(at url: URL) -> Result<URL, FileCopyService.FileCopyError> {
+      do {
+          let resourceValues = try url.resourceValues(forKeys: [.isDirectoryKey])
+          
+          // Check if the resource exists and is a directory
+          guard resourceValues.isDirectory == true else {
+            return .failure(.directoryNotFound)
+          }
+          
+          // Return the directory URL on success
+          return .success(url)
+          
+      } catch {
+        return .failure(.fileNotFound("\(url.lastPathComponent)"))
+      }
+  }
 }
