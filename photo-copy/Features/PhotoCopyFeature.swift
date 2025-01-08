@@ -117,6 +117,9 @@ struct PhotoCopyFeature: Reducer {
         return .none
         
       case .requiredFoldersFailed:
+        // TODO: Implement view for erro
+        state.paxFolder = nil
+        state.finalsFolder = nil
         return .none
         
       case let .loadExistingCustomers(paxDir):

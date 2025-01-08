@@ -25,6 +25,7 @@ enum FileCopyService {
     }
   }
   
+  // TODO: Make Use of SecurityScopedHelper
   static func copyFiles(from source: URL, to destination: URL, files: [String]) async -> FileCopyResult {
     var copiedFiles: [String] = []
     var missingFiles: [String] = []

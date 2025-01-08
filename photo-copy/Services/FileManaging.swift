@@ -29,14 +29,12 @@ final class SecureFileManager: FileManaging {
     func getDirectory(at baseURL: URL, withName name: String) -> Result<URL, FileCopyService.FileCopyError> {
       let dirURL = baseURL.appendingPathComponent(name)
       
-      switch checkDirectory(at: dirURL) {
-      case let .success(url):
+      if FileManager.default.fileExists(atPath: dirURL.path) {
         return SecurityScopedHelper.access(baseURL) {
-            return SecurityScopedHelper.createSecureBookmark(for: dirURL)
+          return SecurityScopedHelper.createSecureBookmark(for: dirURL)
         }
-        
-      case let .failure(error):
-        return .failure(error)
+      } else {
+        return .failure(.directoryNotFound)
       }
     }
     
