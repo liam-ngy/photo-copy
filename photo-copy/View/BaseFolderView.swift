@@ -1,13 +1,13 @@
 import SwiftUI
 import ComposableArchitecture
 
-struct SourceFolderView: View {
+struct BaseFolderView: View {
   let store: StoreOf<PhotoCopyFeature>
   @Binding var showingSourcePicker: Bool
   
   var body: some View {
     WithViewStore(store, observe: { $0 }) { viewStore in
-      GroupBox(label: Text("Source Folder (Photos)").font(.headline)) {
+      GroupBox(label: Text("Base Folder").font(.headline)) {
         HStack {
           Button("Choose...") {
             showingSourcePicker.toggle()
@@ -18,12 +18,12 @@ struct SourceFolderView: View {
             allowedContentTypes: [.folder],
             onCompletion: { result in
               if case .success(let url) = result {
-                viewStore.send(.setFinalsFolder(url))
+                viewStore.send(.setBaseFolder(url))
               }
             }
           )
           
-          if let sourcePath = viewStore.finalsFolder?.path {
+          if let sourcePath = viewStore.baseFolder?.path {
             Text(sourcePath)
               .lineLimit(1)
               .truncationMode(.middle)

@@ -4,8 +4,7 @@ import ComposableArchitecture
 struct ContentView: View {
   let store: StoreOf<PhotoCopyFeature>
   
-  @State private var showingSourcePicker = false
-  @State private var showingDestinationPicker = false
+  @State private var showingBasePicker = false
   @FocusState private var isCustomerInputFocused: Bool
   @FocusState private var isPhotoInputFocused: Bool
   
@@ -18,8 +17,7 @@ struct ContentView: View {
           .padding(.top)
           .padding(.bottom)
         
-        SourceFolderView(store: store, showingSourcePicker: $showingSourcePicker)
-        DestinationFolderView(store: store, showingDestinationPicker: $showingDestinationPicker)
+        BaseFolderView(store: store, showingSourcePicker: $showingBasePicker)
         CustomerSelectionView(store: store)
         PhotoSelectionView(store: store)
         ResultDisplayView(store: store)

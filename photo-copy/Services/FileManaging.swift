@@ -9,6 +9,7 @@ protocol FileManaging {
 final class SecureFileManager: FileManaging {
     private let fileManager = FileManager.default
     
+  // TODO: Needs to be changed to finals
     func createDirectory(at baseURL: URL, withName name: String) -> Result<URL, FileCopyService.FileCopyError> {
         SecurityScopedHelper.access(baseURL) {
             let newDirURL = baseURL.appendingPathComponent(name)

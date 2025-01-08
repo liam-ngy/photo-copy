@@ -3,13 +3,25 @@ import ComposableArchitecture
 
 struct PhotoCopyFeature: Reducer {
   struct State: Equatable {
-    var finalsFolder: URL?
-    var paxFolder: URL?
+    var baseFolder: URL?
+    
+    var finalsFolder: URL? {
+      guard let base = baseFolder else { return nil }
+      return base.appendingPathComponent("finals")
+    }
+    
+    var paxFolder: URL? {
+      guard let base = baseFolder else { return nil }
+      return base.appendingPathComponent("pax")
+    }
+    
     var destinationFolder: URL?
     var customerInput: String = ""
     var photoInput: String = ""
     var existingCustomers: [String] = []
     var copyState: CopyState = .idle
+    
+    
     
     var hasValidCustomerInput: Bool {
       !customerInput.trimmingCharacters(in: .whitespaces).isEmpty
@@ -46,9 +58,10 @@ struct PhotoCopyFeature: Reducer {
   }
   
   enum Action: Equatable {
-    case setFinalsFolder(URL)
+    case setBaseFolder(URL)
+    case baseSelectionCancelled
+    
     case finalsSelectionCancelled
-    case setPaxFolder(URL)
     case paxSelectionCancelled
     
     case loadExistingCustomers
@@ -72,30 +85,41 @@ struct PhotoCopyFeature: Reducer {
   var body: some Reducer<State, Action> {
     Reduce { state, action in
       switch action {
-      case let .setFinalsFolder(url):
-        state.finalsFolder = url
+      case let .setBaseFolder(url):
+        state.baseFolder = url
+        
+        return .run { send in
+          await send(.loadExistingCustomers)
+        }
+
+        
+      case .baseSelectionCancelled:
         return .none
         
       case .finalsSelectionCancelled:
         return .none
         
-      case let .setPaxFolder(url):
-        state.paxFolder = url
-        return .run { send in
-          await send(.loadExistingCustomers)
-        }
-        
       case .paxSelectionCancelled:
         return .none
         
       case .loadExistingCustomers:
-        guard let baseDir = state.paxFolder else { return .none }
+        guard let baseFolder = state.baseFolder else {
+          return .none
+        }
         return .run { send in
-          let result = await fileManager.listContents(baseDir)
-          switch result {
-          case .success(let customers):
-            await send(.existingCustomersLoaded(customers))
-          case .failure:
+          switch await fileManager.getDirectory(baseFolder, "pax") {
+          case let .success(paxDir):
+            switch await fileManager.listContents(paxDir) {
+            case let .success(customers):
+              await send(.existingCustomersLoaded(customers))
+              
+            case let .failure(error):
+              print(error)
+              await send(.existingCustomersLoaded([]))
+            }
+          case let .failure(error):
+            // TODO: Is that the correct way to handle it like this
+            print(error)
             await send(.existingCustomersLoaded([]))
           }
         }
@@ -105,10 +129,10 @@ struct PhotoCopyFeature: Reducer {
         return .none
         
       case let .selectExistingCustomer(customer):
-        guard let baseDir = state.paxFolder else { return .none }
+        guard let paxDir = state.paxFolder else { return .none }
         state.customerInput = customer
         return .run { send in
-          let result = await fileManager.getDirectory(baseDir, customer)
+          let result = await fileManager.getDirectory(paxDir, customer)
           switch result {
           case .success(let url):
             await send(.customerDirectoryCreated(url))
@@ -122,12 +146,12 @@ struct PhotoCopyFeature: Reducer {
         return .none
         
       case .createCustomerDirectory:
-        guard let baseDir = state.paxFolder,
+        guard let paxDir = state.paxFolder,
               !state.customerInput.trimmingCharacters(in: .whitespaces).isEmpty
         else { return .none }
         
         return .run { [customerInput = state.customerInput] send in
-          let result = await fileManager.createDirectory(baseDir, customerInput)
+          let result = await fileManager.createDirectory(paxDir, customerInput)
           switch result {
           case .success(let url):
             await send(.customerDirectoryCreated(url))
