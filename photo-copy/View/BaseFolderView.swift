@@ -28,7 +28,14 @@ struct BaseFolderView: View {
               .lineLimit(1)
               .truncationMode(.middle)
           }
+          
         }
+      }
+      
+      if viewStore.hasBaseFolderErrorMessage {
+        Text(viewStore.baseFolderErrorMessage)
+          .font(.system(.body, design: .monospaced))
+          .foregroundColor(.red)
       }
     }
   }

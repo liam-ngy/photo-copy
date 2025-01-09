@@ -13,8 +13,7 @@ struct PhotoCopyFeature: Reducer {
     var photoInput: String = ""
     var existingCustomers: [String] = []
     var copyState: CopyState = .idle
-    
-    
+    var baseFolderErrorMessage: String = ""
     
     var hasValidCustomerInput: Bool {
       !customerInput.trimmingCharacters(in: .whitespaces).isEmpty
@@ -34,6 +33,10 @@ struct PhotoCopyFeature: Reducer {
     
     var canProceedToPhotos: Bool {
       isCustomerDirectoryCreated
+    }
+    
+    var hasBaseFolderErrorMessage: Bool {
+      !baseFolderErrorMessage.isEmpty
     }
     
     enum CopyState: Equatable {
@@ -61,6 +64,7 @@ struct PhotoCopyFeature: Reducer {
     case paxSelectionCancelled
     
     case requiredFoldersFailed(FileCopyService.FileCopyError)
+    case clearBaseFolderErrorMessage
     
     case loadExistingCustomers(URL)
     case existingCustomersLoaded([String])
@@ -90,6 +94,15 @@ struct PhotoCopyFeature: Reducer {
           switch await fileManager.getDirectory(url, "pax") {
           case let .success(url):
             await send(.setPaxFolder(url))
+            await send(.clearBaseFolderErrorMessage)
+
+          case let .failure(error):
+            await send(.requiredFoldersFailed(error))
+          }
+          
+          switch await fileManager.getDirectory(url, "finals") {
+          case let .success(url):
+            await send(.setFinalsFolder(url))
             
           case let .failure(error):
             await send(.requiredFoldersFailed(error))
@@ -97,6 +110,10 @@ struct PhotoCopyFeature: Reducer {
         }
         
       case .baseSelectionCancelled:
+        return .none
+        
+      case .clearBaseFolderErrorMessage:
+        state.baseFolderErrorMessage = ""
         return .none
         
       case let .setPaxFolder(url):
@@ -116,10 +133,10 @@ struct PhotoCopyFeature: Reducer {
       case .paxSelectionCancelled:
         return .none
         
-      case .requiredFoldersFailed:
-        // TODO: Implement view for erro
+      case let .requiredFoldersFailed(error):
         state.paxFolder = nil
         state.finalsFolder = nil
+        state.baseFolderErrorMessage = error.description
         return .none
         
       case let .loadExistingCustomers(paxDir):
