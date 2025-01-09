@@ -6,6 +6,28 @@ struct ResultDisplayView: View {
   
   var body: some View {
     WithViewStore(store, observe: { $0 }) { viewStore in
+      // MARK: Flder Error
+      if viewStore.hasFolderErrorMessages {
+          GroupBox(label: Text("Errors").font(.headline)) {
+              VStack(alignment: .leading, spacing: 8) {
+                  ForEach(viewStore.folderErrorMessages, id: \.self) { errorMessage in
+                      HStack(alignment: .top) {
+                          Image(systemName: "exclamationmark.triangle.fill")
+                              .foregroundColor(.red)
+                              .padding(.top, 2)
+                          Text(errorMessage)
+                              .foregroundColor(.red)
+                              .multilineTextAlignment(.leading)
+                      }
+                  }
+              }
+              .padding()
+          }
+          .frame(maxHeight: 200) // Adjust as needed
+      }
+      
+      // MARK: - Photocopy Result
+      
       if case let .completed(result) = viewStore.copyState {
         GroupBox(label: Text("Operation Result").font(.headline)) {
           HStack {

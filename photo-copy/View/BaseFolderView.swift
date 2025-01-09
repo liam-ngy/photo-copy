@@ -31,12 +31,6 @@ struct BaseFolderView: View {
           
         }
       }
-      
-      if viewStore.hasBaseFolderErrorMessage {
-        Text(viewStore.baseFolderErrorMessage)
-          .font(.system(.body, design: .monospaced))
-          .foregroundColor(.red)
-      }
     }
   }
 }

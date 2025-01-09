@@ -13,8 +13,10 @@ struct PhotoCopyFeature: Reducer {
     var photoInput: String = ""
     var existingCustomers: [String] = []
     var copyState: CopyState = .idle
-    var baseFolderErrorMessage: String = ""
     
+    var folderErrorMessages: [String] = []
+    
+    // TODO: Wrong source of truth
     var hasValidCustomerInput: Bool {
       !customerInput.trimmingCharacters(in: .whitespaces).isEmpty
     }
@@ -35,8 +37,8 @@ struct PhotoCopyFeature: Reducer {
       isCustomerDirectoryCreated
     }
     
-    var hasBaseFolderErrorMessage: Bool {
-      !baseFolderErrorMessage.isEmpty
+    var hasFolderErrorMessages: Bool {
+      !folderErrorMessages.isEmpty
     }
     
     enum CopyState: Equatable {
@@ -63,8 +65,7 @@ struct PhotoCopyFeature: Reducer {
     case finalsSelectionCancelled
     case paxSelectionCancelled
     
-    case requiredFoldersFailed(FileCopyService.FileCopyError)
-    case clearBaseFolderErrorMessage
+    case requiredFoldersFailed(folder: String, error: FileCopyService.FileCopyError)
     
     case loadExistingCustomers(URL)
     case existingCustomersLoaded([String])
@@ -89,31 +90,29 @@ struct PhotoCopyFeature: Reducer {
       switch action {
       case let .setBaseFolder(url):
         state.baseFolder = url
+        state.folderErrorMessages = []
         
         return .run { send in
-          switch await fileManager.getDirectory(url, "pax") {
+          let paxDir = "pax"
+          switch await fileManager.getDirectory(url, paxDir) {
           case let .success(url):
             await send(.setPaxFolder(url))
-            await send(.clearBaseFolderErrorMessage)
 
           case let .failure(error):
-            await send(.requiredFoldersFailed(error))
+            await send(.requiredFoldersFailed(folder: paxDir, error: error))
           }
           
-          switch await fileManager.getDirectory(url, "finals") {
+          let finalsDir = "finals"
+          switch await fileManager.getDirectory(url, finalsDir) {
           case let .success(url):
             await send(.setFinalsFolder(url))
             
           case let .failure(error):
-            await send(.requiredFoldersFailed(error))
+            await send(.requiredFoldersFailed(folder: finalsDir , error: error))
           }
         }
         
       case .baseSelectionCancelled:
-        return .none
-        
-      case .clearBaseFolderErrorMessage:
-        state.baseFolderErrorMessage = ""
         return .none
         
       case let .setPaxFolder(url):
@@ -133,10 +132,16 @@ struct PhotoCopyFeature: Reducer {
       case .paxSelectionCancelled:
         return .none
         
-      case let .requiredFoldersFailed(error):
-        state.paxFolder = nil
-        state.finalsFolder = nil
-        state.baseFolderErrorMessage = error.description
+      case let .requiredFoldersFailed(folder, error):
+        // TODO: Refactor this later. Makse use of FileCopyMessage Buidler? Or centralized message
+        // TODO: If one folder is not found and user ceratied it again add a button to recheck
+        
+        let errorMessage = "\(folder.capitalized) Folder Error: \(error.description)"
+        state.folderErrorMessages.append(errorMessage)
+        
+        state.paxFolder = folder == "pax" ? nil : state.paxFolder
+        state.finalsFolder = folder == "finals" ? nil : state.finalsFolder
+        
         return .none
         
       case let .loadExistingCustomers(paxDir):
