@@ -20,8 +20,11 @@ struct ContentView: View {
         BaseFolderView(store: store, showingSourcePicker: $showingBasePicker)
         CustomerSelectionView(store: store)
         PhotoSelectionView(store: store)
-        ResultDisplayView(store: store)
         
+        if viewStore.hasFolderErrorMessages || isCopyOperationCompleted(viewStore.copyState) {
+          ResultDisplayView(store: store)
+            .transition(.slide)
+           }
         Spacer()
       }
       .padding()
@@ -32,5 +35,14 @@ struct ContentView: View {
         }
       }
     }
+  }
+  // TODO: Move it to feature
+  private func isCopyOperationCompleted(_ copyState: PhotoCopyFeature.State.CopyState) -> Bool {
+      switch copyState {
+      case .completed(_):
+          return true
+      default:
+          return false
+      }
   }
 }
