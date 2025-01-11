@@ -3,10 +3,10 @@ import ComposableArchitecture
 
 struct PhotoCopyFeature: Reducer {
   struct State: Equatable {
-    var baseFolder: URL?
+    var baseFolder: URL? = nil
     
-    var finalsFolder: URL?
-    var paxFolder: URL?
+    var finalsFolder: URL? = nil
+    var paxFolder: URL? = nil
     
     var destinationFolder: URL?
     var customerInput: String = ""
@@ -55,33 +55,36 @@ struct PhotoCopyFeature: Reducer {
     }
   }
   
+  // MARK: - Actions
   enum Action: Equatable {
+    // MARK: - Folder Actions
     case setBaseFolder(URL)
     case baseSelectionCancelled
-    
     case setFinalsFolder(URL)
     case setPaxFolder(URL)
-
     case finalsSelectionCancelled
     case paxSelectionCancelled
-    
     case requiredFoldersFailed(folder: Folder, error: FileCopyService.FileCopyError)
     case folderErrorOccurred(FileCopyService.FileCopyError)
     
+    // MARK: - Customer Actions
     case loadExistingCustomers(URL)
     case existingCustomersLoaded([String])
     case selectExistingCustomer(String)
-    
     case updateCustomerInput(String)
     case createCustomerDirectory
     case customerDirectoryCreated(URL)
     case customerDirectoryFailed(FileCopyService.FileCopyError)
-    
     case clearCustomer
     
+    // MARK: - Photo Actions
     case updatePhotoInput(String)
+    case clearPhotoInput
     case copyPhotos
     case copyPhotosCompleted(FileCopyService.FileCopyResult)
+    
+    // MARK: - Reset Action
+    case resetState
   }
   
   @Dependency(\.fileManager) var fileManager
@@ -90,8 +93,9 @@ struct PhotoCopyFeature: Reducer {
     Reduce { state, action in
       switch action {
       case let .setBaseFolder(url):
+        state = State.init()
+        
         state.baseFolder = url
-        state.folderErrorMessages = []
         
         
         return .run { send in
@@ -150,9 +154,9 @@ struct PhotoCopyFeature: Reducer {
         state.folderErrorMessages = []
         return .run { send in
           switch await fileManager.listContents(paxDir) {
-            case let .success(customers):
-              await send(.existingCustomersLoaded(customers))
-              
+          case let .success(customers):
+            await send(.existingCustomersLoaded(customers))
+            
           case let .failure(error):
             // TODO: Is that the correct way to handle it like this
             print(error)
@@ -169,6 +173,8 @@ struct PhotoCopyFeature: Reducer {
         guard let paxDir = state.paxFolder else { return .none }
         state.customerInput = customer
         return .run { send in
+          await send(.clearPhotoInput)
+          
           let result = await fileManager.getDirectory(paxDir, customer)
           switch result {
           case .success(let url):
@@ -230,6 +236,10 @@ struct PhotoCopyFeature: Reducer {
         state.photoInput = input
         return .none
         
+      case .clearPhotoInput:
+        state.photoInput = ""
+        return .none
+        
       case .copyPhotos:
         guard let source = state.finalsFolder,
               let destination = state.destinationFolder else {
@@ -263,6 +273,10 @@ struct PhotoCopyFeature: Reducer {
       case let .copyPhotosCompleted(result):
         state.copyState = .completed(result)
         
+        return .none
+        
+      case .resetState:
+        state = State.init()
         return .none
       }
     }
