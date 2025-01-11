@@ -18,7 +18,7 @@ struct BaseFolderView: View {
             allowedContentTypes: [.folder],
             onCompletion: { result in
               if case .success(let url) = result {
-                viewStore.send(.setBaseFolder(url))
+                viewStore.send(.folder(.setBaseFolder(url)))
               }
             }
           )

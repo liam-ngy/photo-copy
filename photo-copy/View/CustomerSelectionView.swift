@@ -12,7 +12,7 @@ struct CustomerSelectionView: View {
             Menu(viewStore.isCustomerDirectoryCreated && viewStore.paxFolder != nil ? "Selected: \(viewStore.customerInput)" : "Select Existing Customer") {
               ForEach(viewStore.existingCustomers, id: \.self) { customer in
                 Button(customer) {
-                  viewStore.send(.selectExistingCustomer(customer))
+                  viewStore.send(.customer(.selectExistingCustomer(customer)))
                 }
               }
             }
@@ -21,7 +21,7 @@ struct CustomerSelectionView: View {
           
           if viewStore.isCustomerDirectoryCreated {
             Button("New Customer") {
-              viewStore.send(.clearCustomer)
+              viewStore.send(.customer(.clearCustomer))
             }
             .keyboardShortcut("n", modifiers: [.command, .shift])
           }
@@ -32,13 +32,13 @@ struct CustomerSelectionView: View {
             TextField("Enter customer name",
                       text: viewStore.binding(
                         get: \.customerInput,
-                        send: { .updateCustomerInput($0) }
+                        send: { .customer(.updateCustomerInput($0)) }
                       )
             )
             .textFieldStyle(.roundedBorder)
             
             Button("Create") {
-              viewStore.send(.createCustomerDirectory)
+              viewStore.send(.customer(.createCustomerDirectory))
             }
             .disabled(!viewStore.canCreateCustomerDirectory)
           }

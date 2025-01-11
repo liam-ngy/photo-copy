@@ -11,16 +11,16 @@ struct PhotoSelectionView: View {
           TextField("Enter photo range or single photos (e.g. 1, 1-10)",
                     text: viewStore.binding(
                       get: \.photoInput,
-                      send: { .updatePhotoInput($0) }
+                      send: { .photo(.updatePhotoInput($0)) }
                     )
           )
           .textFieldStyle(.roundedBorder)
           .onSubmit {
-            viewStore.send(.copyPhotos)
+            viewStore.send(.photo(.copyPhotos))
           }
           
           Button(action: {
-            viewStore.send(.copyPhotos)
+            viewStore.send(.photo(.copyPhotos))
           }) {
             Text(viewStore.copyState.isCopying ? "Copying..." : "Copy Photos")
               .frame(maxWidth: .infinity)
