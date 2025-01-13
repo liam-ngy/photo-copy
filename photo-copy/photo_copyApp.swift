@@ -3,16 +3,15 @@ import ComposableArchitecture
 
 @main
 struct photo_copyApp: App {
-  static let store = Store(
-      initialState: PhotoCopyFeature.State()
-  ) {
-      PhotoCopyFeature()
+  @State var store = Store(initialState: PhotoCopyFeature.State()) {
+    PhotoCopyFeature()._printChanges()
   }
   
   var body: some Scene {
-    WindowGroup {
-      ContentView(store: Self.store)
+    Window("Rex Photo Selector", id: "mainWindow") {
+      ContentView(store: self.store)
     }
+    .windowResizability(.contentSize)
   }
 }
 

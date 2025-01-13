@@ -8,6 +8,9 @@ struct PhotoCopyFeature {
   
   @ObservableState
   struct State: Equatable {
+    var folderState = FolderFeature.State()
+    var customerState = CustomerFeature.State()
+    
     var baseFolder: URL?
     var finalsFolder: URL?
     var paxFolder: URL?
@@ -58,7 +61,10 @@ struct PhotoCopyFeature {
   
   // MARK: - Actions
   
-  enum Action: Equatable {
+  enum Action: Equatable, Sendable {
+    case folderAction(FolderFeature.Action)
+    case customerAction(CustomerFeature.Action)
+    
     case folder(FolderAction)
     case customer(CustomerAction)
     case photo(PhotoAction)
@@ -99,7 +105,15 @@ struct PhotoCopyFeature {
   
   @Dependency(\.fileManager) var fileManager
   
-  var body: some Reducer<State, Action> {
+  var body: some ReducerOf<Self> {
+    Scope(state: \.folderState, action: \.folderAction) {
+      FolderFeature()
+    }
+    
+    Scope(state: \.customerState, action: \.customerAction) {
+      CustomerFeature()
+    }
+    
     Reduce { state, action in
       switch action {
       case .folder(let folderAction):
@@ -123,6 +137,16 @@ struct PhotoCopyFeature {
         state.copyState = .idle
         state.folderErrorMessages = []
         return .none
+      
+      case .folderAction(.setPaxFolder):
+        return CustomerFeature()
+          .reduce(into: &state.customerState, action: .loadExistingCustomers)
+          .map { @Sendable action in
+            PhotoCopyFeature.Action.customerAction(action)
+          }
+          
+      default:
+          return .none
       }
     }
   }

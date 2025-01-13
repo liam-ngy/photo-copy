@@ -9,40 +9,42 @@ struct ContentView: View {
   @FocusState private var isPhotoInputFocused: Bool
   
   var body: some View {
-    WithViewStore(store, observe: { $0 }) { viewStore in
-      VStack(alignment: .leading) {
-        Text("Rex Photo Selector")
-          .font(.largeTitle)
-          .fontWeight(.bold)
-          .padding(.top)
-          .padding(.bottom)
-        
-        BaseFolderView(store: store, showingSourcePicker: $showingBasePicker)
-        CustomerSelectionView(store: store)
-        PhotoSelectionView(store: store)
-        
-        if viewStore.hasFolderErrorMessages || isCopyOperationCompleted(viewStore.copyState) {
-          ResultDisplayView(store: store)
-            .transition(.slide)
-           }
-        Spacer()
+    VStack(alignment: .leading) {
+      Text("Rex Photo Selector")
+        .font(.largeTitle)
+        .fontWeight(.bold)
+        .padding(.top)
+        .padding(.bottom)
+      
+      BaseFolderView(
+        store: store.scope(state: \.folderState, action: \.folderAction),
+        showingSourcePicker: $showingBasePicker
+      )
+      
+      CustomerSelectionView(store: store)
+      PhotoSelectionView(store: store)
+      
+      if store.hasFolderErrorMessages || isCopyOperationCompleted(store.copyState) {
+        ResultDisplayView(store: store)
+          .transition(.slide)
       }
-      .padding()
-      .frame(minWidth: 400, minHeight: 500)
-      .onChange(of: viewStore.destinationFolder) { _ in
-        if viewStore.destinationFolder == nil {
-          isCustomerInputFocused = true
-        }
+      Spacer()
+    }
+    .padding()
+    .frame(minWidth: 400, minHeight: 500)
+    .onChange(of: store.destinationFolder) { _ in
+      if store.destinationFolder == nil {
+        isCustomerInputFocused = true
       }
     }
   }
   // TODO: Move it to feature
   private func isCopyOperationCompleted(_ copyState: PhotoCopyFeature.State.CopyState) -> Bool {
-      switch copyState {
-      case .completed(_):
-          return true
-      default:
-          return false
-      }
+    switch copyState {
+    case .completed(_):
+      return true
+    default:
+      return false
+    }
   }
 }
