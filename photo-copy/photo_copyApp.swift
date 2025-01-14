@@ -3,8 +3,8 @@ import ComposableArchitecture
 
 @main
 struct photo_copyApp: App {
-  @State var store = Store(initialState: PhotoCopyFeature.State()) {
-    PhotoCopyFeature()._printChanges()
+  @State var store = Store(initialState: AppFeature.State()) {
+    AppFeature()._printChanges()
   }
   
   var body: some Scene {

@@ -2,7 +2,7 @@ import SwiftUI
 import ComposableArchitecture
 
 struct ResultDisplayView: View {
-  let store: StoreOf<PhotoCopyFeature>
+  let store: StoreOf<AppFeature>
   
   var body: some View {
     WithViewStore(store, observe: { $0 }) { viewStore in

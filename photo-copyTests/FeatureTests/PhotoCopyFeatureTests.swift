@@ -6,8 +6,8 @@ import Foundation
 struct PhotoCopyFeatureTests {
   @Test("Initial state should have create directory disabled")
   func testInitialState() async {
-    let store = await TestStore(initialState: PhotoCopyFeature.State()) {
-      PhotoCopyFeature()
+    let store = await TestStore(initialState: AppFeature.State()) {
+      AppFeature()
     }
     
     await #expect(store.state.customerInput == "")
@@ -18,8 +18,8 @@ struct PhotoCopyFeatureTests {
   
   @Test("Customer input alone should not enable directory creation")
   func testCustomerInputOnly() async {
-    let store = await TestStore(initialState: PhotoCopyFeature.State()) {
-      PhotoCopyFeature()
+    let store = await TestStore(initialState: AppFeature.State()) {
+      AppFeature()
     }
     
     await store.send(.updateCustomerInput("69 Test")) {
@@ -30,8 +30,8 @@ struct PhotoCopyFeatureTests {
   
   @Test("Base destination alone should not enable directory creation")
   func testBaseDestinationOnly() async {
-    let store = await TestStore(initialState: PhotoCopyFeature.State()) {
-      PhotoCopyFeature()
+    let store = await TestStore(initialState: AppFeature.State()) {
+      AppFeature()
     }
     
     let testURL = URL(fileURLWithPath: "/test/path")
@@ -47,8 +47,8 @@ struct PhotoCopyFeatureTests {
   
   @Test("Both valid input and destination should enable directory creation")
   func testValidInputAndDestination() async {
-    let store = await TestStore(initialState: PhotoCopyFeature.State()) {
-      PhotoCopyFeature()
+    let store = await TestStore(initialState: AppFeature.State()) {
+      AppFeature()
     }
     
     let testURL = URL(fileURLWithPath: "/test/path")
@@ -67,8 +67,8 @@ struct PhotoCopyFeatureTests {
   
   @Test("Directory creation should succeed with valid inputs")
   func testDirectoryCreationSuccess() async {
-    _ = await TestStore(initialState: PhotoCopyFeature.State()) {
-      PhotoCopyFeature()
+    _ = await TestStore(initialState: AppFeature.State()) {
+      AppFeature()
     } withDependencies: {
       $0.fileManager.createDirectory = { baseURL, name in
         let newURL = baseURL.appendingPathComponent(name)
@@ -79,8 +79,8 @@ struct PhotoCopyFeatureTests {
   
   @Test("Directory creation should fail with invalid permissions")
   func testDirectoryCreationFailure() async {
-    _ = await TestStore(initialState: PhotoCopyFeature.State()) {
-      PhotoCopyFeature()
+    _ = await TestStore(initialState: AppFeature.State()) {
+      AppFeature()
     } withDependencies: {
       $0.fileManager.createDirectory = { _, _ in
           .failure(.insufficientPermissions)
@@ -90,19 +90,19 @@ struct PhotoCopyFeatureTests {
   
   @Test("Empty customer input should fail immediately")
   func testEmptyCustomerInput() async {
-    let _ = await TestStore(initialState: PhotoCopyFeature.State()) {
-      PhotoCopyFeature()
+    let _ = await TestStore(initialState: AppFeature.State()) {
+      AppFeature()
     }
   }
   
   @Test("Clear customer should reset customer-related state")
   func testClearCustomer() async {
-    let store = await TestStore(initialState: PhotoCopyFeature.State(
+    let store = await TestStore(initialState: AppFeature.State(
       paxFolder: URL(fileURLWithPath: "/test/path"),
       destinationFolder: URL(fileURLWithPath: "/test/path/69 Test"),
       customerInput: "69 Test"
     )) {
-      PhotoCopyFeature()
+      AppFeature()
     }
     
     // Verify initial state

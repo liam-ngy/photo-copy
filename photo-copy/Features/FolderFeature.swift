@@ -9,14 +9,12 @@ struct FolderFeature {
   @ObservableState
   struct State: Equatable {
     var baseFolder: URL?
-    var finalsFolder: URL?
     
+    @Shared(.inMemory("finalsFolder"))
+    var finalsFolder: URL?
     
     @Shared(.inMemory("paxFolder"))
     var paxFolder: URL?
-    
-    @Shared(.inMemory("destinationFolder"))
-    var destinationFolder: URL?
     
     var folderErrorMessages: [String] = []
     
@@ -29,11 +27,13 @@ struct FolderFeature {
     // MARK: - UI Action
     case didPressChooseBase(URL)
     
+    case setBaseFolder(URL)
     case setFinalsFolder(URL)
     case setPaxFolder(URL)
     case requiredFoldersFailed(folder: Folder, error: FileCopyService.FileCopyError)
     case clearFolderErrorMessages
-    case loadFolders(URL) // Action to load folders
+    // TODO: Remove action maybe
+    case loadFolders(URL)
   }
   
   @Dependency(\.fileManager) var fileManager
@@ -41,22 +41,23 @@ struct FolderFeature {
   var body: some ReducerOf<Self> {
     Reduce { state, action in
       switch action {
-      case let .didPressChooseBase(url):
+      case .didPressChooseBase:
+        // Case is being handled by AppFeature
+        return .none
+        
+      case let .setBaseFolder(url):
         state.baseFolder = url
-        state.folderErrorMessages = []
         
         return .run { send in
           await send(.loadFolders(url))
         }
         
       case let .setFinalsFolder(url):
-        state.finalsFolder = url
+        state.$finalsFolder.withLock { $0 = url }
         return .none
         
       case let .setPaxFolder(url):
         state.$paxFolder.withLock { $0 = url }
-        
-        
         return .none
         
         
@@ -86,5 +87,16 @@ struct FolderFeature {
         }
       }
     }
+  }
+}
+
+extension FolderFeature.State {
+  mutating func reset() -> Effect<FolderFeature.Action> {
+    baseFolder = nil
+    $finalsFolder.withLock { $0 = nil }
+    $paxFolder.withLock { $0 = nil }
+    folderErrorMessages = []
+    
+    return .none
   }
 }

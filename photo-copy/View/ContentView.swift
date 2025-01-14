@@ -2,7 +2,7 @@ import SwiftUI
 import ComposableArchitecture
 
 struct ContentView: View {
-  let store: StoreOf<PhotoCopyFeature>
+  let store: StoreOf<AppFeature>
   
   @State private var showingBasePicker = false
   @FocusState private var isCustomerInputFocused: Bool
@@ -17,11 +17,11 @@ struct ContentView: View {
         .padding(.bottom)
       
       BaseFolderView(
-        store: store.scope(state: \.folderState, action: \.folderAction),
+        store: store.scope(state: \.folderState, action: \.folder),
         showingSourcePicker: $showingBasePicker
       )
       
-      CustomerSelectionView(store: store)
+      CustomerSelectionView(store: store.scope(state: \.customerState, action: \.customer))
       PhotoSelectionView(store: store)
       
       if store.hasFolderErrorMessages || isCopyOperationCompleted(store.copyState) {
@@ -39,7 +39,7 @@ struct ContentView: View {
     }
   }
   // TODO: Move it to feature
-  private func isCopyOperationCompleted(_ copyState: PhotoCopyFeature.State.CopyState) -> Bool {
+  private func isCopyOperationCompleted(_ copyState: AppFeature.State.CopyState) -> Bool {
     switch copyState {
     case .completed(_):
       return true

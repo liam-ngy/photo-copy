@@ -2,45 +2,40 @@ import SwiftUI
 import ComposableArchitecture
 
 struct CustomerSelectionView: View {
-  let store: StoreOf<PhotoCopyFeature>
+  @Perception.Bindable var store: StoreOf<CustomerFeature>
   
   var body: some View {
-    WithViewStore(store, observe: { $0 }) { viewStore in
+    WithPerceptionTracking {
       GroupBox(label: Text("Customer").font(.headline)) {
         HStack {
-          if viewStore.paxFolder != nil {
-            Menu(viewStore.isCustomerDirectoryCreated && viewStore.paxFolder != nil ? "Selected: \(viewStore.customerInput)" : "Select Existing Customer") {
-              ForEach(viewStore.existingCustomers, id: \.self) { customer in
+          if store.paxFolder != nil {
+            Menu(store.customerFolderIsSet ? "Selected: \(store.customerInput)" : "Select Existing Customer") {
+              ForEach(store.existingCustomers, id: \.self) { customer in
                 Button(customer) {
-                  viewStore.send(.customer(.selectExistingCustomer(customer)))
+                  store.send(.didSelectExistingCustomer(customer))
                 }
               }
             }
           }
-            
           
-          if viewStore.isCustomerDirectoryCreated {
+          
+          if store.customerFolderIsSet {
             Button("New Customer") {
-              viewStore.send(.customer(.clearCustomer))
+              store.send(.didTapNewCustomer)
             }
             .keyboardShortcut("n", modifiers: [.command, .shift])
           }
         }
         
-        if !viewStore.isCustomerDirectoryCreated {
+        if !store.customerFolderIsSet {
           HStack {
-            TextField("Enter customer name",
-                      text: viewStore.binding(
-                        get: \.customerInput,
-                        send: { .customer(.updateCustomerInput($0)) }
-                      )
-            )
+            TextField("Enter customer safety number and name", text: $store.customerInput.sending(\.customerInputChanged))
             .textFieldStyle(.roundedBorder)
             
             Button("Create") {
-              viewStore.send(.customer(.createCustomerDirectory))
+              store.send(.didTapCreateCustomer)
             }
-            .disabled(!viewStore.canCreateCustomerDirectory)
+            .disabled(!store.canCreateCustomerDirectory)
           }
         }
       }
