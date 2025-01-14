@@ -45,9 +45,8 @@ struct CustomerFeature {
     case existingCustomersLoaded([String])
     case loadExistingCustomers
     case setCustomerFolder(URL)
-    case customerDirectoryFailed
+    case customerDirectoryFailed(FileCopyService.FileCopyError)
   }
-  
   
   @Dependency(\.fileManager) var fileManager
 
@@ -69,10 +68,7 @@ struct CustomerFeature {
             await send(.existingCustomersLoaded(customers))
             
           case let .failure(error):
-            // TODO: Fix that
-            
-            // await send(.folder(.requiredFoldersFailed(folder: .pax, error: error)))
-            print(error)
+            await send(.customerDirectoryFailed(error))
           }
         }
         
@@ -81,14 +77,14 @@ struct CustomerFeature {
         state.customerInput = customer
         
         return .run { send in
-          // TODO: FIx it
+          // TODO: Fix it
           //          await send(.photo(.clearPhotoInput))
           switch await fileManager.getDirectory(paxFolder, customer) {
           case let .success(url):
             await send(.setCustomerFolder(url))
             
-          case .failure:
-            await send(.customerDirectoryFailed)
+          case let .failure(error):
+            await send(.customerDirectoryFailed(error))
           }
         }
         
@@ -111,8 +107,8 @@ struct CustomerFeature {
           case let .success(customerUrl):
             await send(.setCustomerFolder(customerUrl))
             
-          case .failure:
-            await send(.customerDirectoryFailed)
+          case let .failure(error):
+            await send(.customerDirectoryFailed(error))
           }
           
         }
@@ -120,8 +116,7 @@ struct CustomerFeature {
       case .didTapNewCustomer:
         state.customerInput = ""
         state.$customerFolder.withLock { $0 = nil }
-        // state.folderErrorMessage
-        // state.copyState = .idl
+        // state.copyState = .idle
         return .none
         
       case let .customerInputChanged(text):

@@ -125,6 +125,17 @@ struct AppFeature {
         return CustomerFeature()
           .reduce(into: &state.customerState, action: .loadExistingCustomers)
           .map(AppFeature.Action.customer)
+        
+      case let .customer(.customerDirectoryFailed(error)): // TODO: Need to specify Folder error
+        return FolderFeature()
+          .reduce(into: &state.folderState, action: .requiredFoldersFailed(folder: .pax, error: error))
+          .map(AppFeature.Action.folder)
+        
+      case .customer(.didTapNewCustomer):
+        return FolderFeature()
+          .reduce(into: &state.folderState, action: .clearFolderErrorMessages)
+          .map(AppFeature.Action.folder)
+        
           
       default:
           return .none
