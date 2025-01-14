@@ -43,6 +43,7 @@ struct PhotoFeature {
         }
         
         let photoInput = state.photoInput
+        state.copyResponse = .copying
         
         return .run { send in
           switch PhotoInputParser.parseToFileNames(photoInput) {

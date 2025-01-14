@@ -19,10 +19,19 @@ enum FileCopyService {
     case partialSuccess(copiedFiles: [String], missingFiles: [String])
     case failure(FileCopyError)
     case idle
+    case copying
     
     var description: String {
       let message = FileCopyMessageBuilder.buildMessage(for: self)
       return message
+    }
+    
+    var isCopying: Bool {
+      if case .copying = self {
+        return true
+      }
+      
+      return false
     }
   }
   

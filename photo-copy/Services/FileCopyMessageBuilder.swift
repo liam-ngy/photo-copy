@@ -18,6 +18,9 @@ struct FileCopyMessageBuilder {
         case .failure(let error):
             builder
             .addLine(error.description)
+        case .idle, .copying:
+          // TODO: Add text
+          return ""
         }
 
         return builder.build()

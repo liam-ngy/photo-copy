@@ -5,7 +5,6 @@ import ComposableArchitecture
 
 @Reducer
 struct CustomerFeature {
-  
   @ObservableState
   struct State: Equatable {
     @Shared(.inMemory("paxFolder"))
@@ -99,8 +98,6 @@ struct CustomerFeature {
         
       case .didTapCreateCustomer:
         guard let paxFolder = state.paxFolder, !state.customerInput.trimmingCharacters(in: .whitespaces).isEmpty else { return .none }
-        
-        // TODO: Change copy state
           
         return .run { [customerInput = state.customerInput] send in
           switch await fileManager.createDirectory(paxFolder, customerInput) {
@@ -138,82 +135,3 @@ extension CustomerFeature.State {
   }
 }
 
-//private func handleCustomerAction(_ state: inout State, _ action: customer) -> Effect<Action> {
-//  switch action {
-//  case let .loadExistingCustomers(paxDir):
-//    state.folderErrorMessages = []
-//    return .run { send in
-//      switch await fileManager.listContents(paxDir) {
-//      case let .success(customers):
-////          await send(.customer(.existingCustomersLoaded(customers)))
-//        break
-//      case let .failure(error):
-//        print(error)
-////          await send(.folder(.requiredFoldersFailed(folder: .pax, error: error)))
-//        break
-//      }
-//    }
-//    
-//  case let .existingCustomersLoaded(customers):
-//    state.existingCustomers = customers
-//    state.folderErrorMessages = []
-//    return .none
-//    
-//  case let .selectExistingCustomer(customer):
-//    guard let paxDir = state.paxFolder else { return .none }
-//    state.customerInput = customer
-//    return .run { send in
-//      await send(.photo(.clearPhotoInput))
-//      let result = await fileManager.getDirectory(paxDir, customer)
-//      switch result {
-//      case .success(let url):
-//        await send(.customer(.customerDirectoryCreated(url)))
-//      case .failure(let error):
-//        await send(.customer(.customerDirectoryFailed(error)))
-//      }
-//    }
-//    
-//  case let .updateCustomerInput(input):
-//    state.customerInput = input
-//    return .none
-//    
-//  case .createCustomerDirectory:
-//    guard let paxDir = state.paxFolder,
-//          !state.customerInput.trimmingCharacters(in: .whitespaces).isEmpty else { return .none }
-//    
-//    state.copyState = .idle
-//    state.folderErrorMessages = []
-//    
-//    return .run { [customerInput = state.customerInput] send in
-//      let result = await fileManager.createDirectory(paxDir, customerInput)
-//      switch result {
-//      case .success(let url):
-//        await send(.customer(.customerDirectoryCreated(url)))
-//      case .failure(let error):
-//        await send(.customer(.customerDirectoryFailed(error)))
-//      }
-//    }
-//    
-//  case let .customerDirectoryCreated(url):
-//    state.destinationFolder = url
-//    state.folderErrorMessages = []
-//    
-//    if let paxDir = state.paxFolder {
-//      return .run { send in
-//        await send(.customer(.loadExistingCustomers(paxDir)))
-//      }
-//    }
-//    
-//    return .none
-//    
-//  case .customerDirectoryFailed:
-//    return .none
-//    
-//  case .clearCustomer:
-//    state.customerInput = ""
-//    state.destinationFolder = nil
-//    state.folderErrorMessages = []
-//    state.copyState = .idle
-//    return .none
-//  }
-//}
