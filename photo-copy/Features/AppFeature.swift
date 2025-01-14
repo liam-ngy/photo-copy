@@ -10,53 +10,7 @@ struct AppFeature {
   struct State: Equatable {
     var folderState = FolderFeature.State()
     var customerState = CustomerFeature.State()
-    
-    var baseFolder: URL?
-    var finalsFolder: URL?
-    var paxFolder: URL?
-    var destinationFolder: URL?
-    var customerInput: String = ""
-    var photoInput: String = ""
-    var existingCustomers: [String] = []
-    var copyState: CopyState = .idle
-    var folderErrorMessages: [String] = []
-    
-    var hasValidCustomerInput: Bool {
-      !customerInput.trimmingCharacters(in: .whitespaces).isEmpty
-    }
-    
-    var canCreateCustomerDirectory: Bool {
-      hasValidCustomerInput && paxFolder != nil
-    }
-    
-    var isCustomerDirectoryCreated: Bool {
-      destinationFolder != nil
-    }
-    
-    var shouldShowCustomerInput: Bool {
-      !isCustomerDirectoryCreated
-    }
-    
-    var canProceedToPhotos: Bool {
-      isCustomerDirectoryCreated
-    }
-    
-    var hasFolderErrorMessages: Bool {
-      !folderErrorMessages.isEmpty
-    }
-    
-    enum CopyState: Equatable {
-      case idle
-      case copying
-      case completed(FileCopyService.FileCopyResult)
-      
-      var isCopying: Bool {
-        if case .copying = self {
-          return true
-        }
-        return false
-      }
-    }
+    var photoState = PhotoFeature.State()
   }
   
   // MARK: - Actions
@@ -64,7 +18,7 @@ struct AppFeature {
   enum Action: Equatable, Sendable {
     case folder(FolderFeature.Action)
     case customer(CustomerFeature.Action)
-    case photo(PhotoAction)
+    case photo(PhotoFeature.Action)
     case resetState
   }
   
@@ -87,7 +41,7 @@ struct AppFeature {
     case updatePhotoInput(String)
     case clearPhotoInput
     case copyPhotos
-    case copyPhotosCompleted(FileCopyService.FileCopyResult)
+    case copyPhotosCompleted(FileCopyService.FileCopyResponse)
   }
   
   @Dependency(\.fileManager) var fileManager
@@ -103,16 +57,6 @@ struct AppFeature {
     
     Reduce { state, action in
       switch action {
-      case .photo(let photoAction):
-        return handlePhotoAction(&state, photoAction)
-        
-      case .resetState:
-        return .concatenate(
-          state.folderState.reset().map(Action.folder),
-          state.customerState.reset().map(Action.customer)
-          // TODO: Add photostate
-        )
-        
       case let .folder(.didPressChooseBase(url)):
         return .concatenate(
           .send(.resetState),
@@ -136,58 +80,18 @@ struct AppFeature {
           .reduce(into: &state.folderState, action: .clearFolderErrorMessages)
           .map(AppFeature.Action.folder)
         
+      case .resetState:
+        return .concatenate(
+          state.folderState.reset().map(Action.folder),
+          state.customerState.reset().map(Action.customer),
+          state.photoState.reset().map(Action.photo)
+        )
+
           
       default:
           return .none
       }
     }
   }
-  
-  // MARK: - Photo Handling
-  
-  private func handlePhotoAction(_ state: inout State, _ action: PhotoAction) -> Effect<Action> {
-    switch action {
-    case let .updatePhotoInput(input):
-      state.photoInput = input
-      return .none
-      
-    case .clearPhotoInput:
-      state.photoInput = ""
-      return .none
-      
-    case .copyPhotos:
-      guard let source = state.finalsFolder,
-            let destination = state.destinationFolder else {
-        state.copyState = .completed(.failure(.invalidSource))
-        return .none
-      }
-      
-      state.copyState = .copying
-      
-      switch PhotoInputParser.parseToFileNames(state.photoInput) {
-      case .success(let photos):
-        if photos.isEmpty {
-          state.copyState = .completed(.failure(.invalidPhotoRange))
-          return .none
-        }
-        
-        return .run { send in
-          let result = await FileCopyService.copyFiles(
-            from: source,
-            to: destination,
-            files: photos
-          )
-          await send(.photo(.copyPhotosCompleted(result)))
-        }
-        
-      case .failure:
-        state.copyState = .completed(.failure(.invalidPhotoRange))
-        return .none
-      }
-      
-    case let .copyPhotosCompleted(result):
-      state.copyState = .completed(result)
-      return .none
-    }
-  }
 }
+

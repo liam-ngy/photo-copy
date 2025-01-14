@@ -35,7 +35,7 @@ struct CustomerFeature {
     }
   }
   
-  enum Action: Equatable, Sendable {
+  enum Action: Equatable {
     // Can be called from the UI
     case didSelectExistingCustomer(String)
     case didTapCreateCustomer
@@ -121,7 +121,6 @@ struct CustomerFeature {
         
       case let .customerInputChanged(text):
         state.customerInput = text
-        print(state.customerInput)
         return .none
       }
     }

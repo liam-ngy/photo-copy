@@ -14,10 +14,11 @@ enum FileCopyService {
     case directoryNotFound(String)
   }
   
-  enum FileCopyResult: Equatable {
+  enum FileCopyResponse: Equatable {
     case success([String])
     case partialSuccess(copiedFiles: [String], missingFiles: [String])
     case failure(FileCopyError)
+    case idle
     
     var description: String {
       let message = FileCopyMessageBuilder.buildMessage(for: self)
@@ -26,7 +27,7 @@ enum FileCopyService {
   }
   
   // TODO: Make Use of SecurityScopedHelper
-  static func copyFiles(from source: URL, to destination: URL, files: [String]) async -> FileCopyResult {
+  static func copyFiles(from source: URL, to destination: URL, files: [String]) async -> FileCopyResponse {
     var copiedFiles: [String] = []
     var missingFiles: [String] = []
     

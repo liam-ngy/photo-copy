@@ -1,5 +1,5 @@
 struct FileCopyMessageBuilder {
-    static func buildMessage(for result: FileCopyService.FileCopyResult) -> String {
+    static func buildMessage(for result: FileCopyService.FileCopyResponse) -> String {
       let builder = MessageBuilder()
 
         switch result {
