@@ -2,34 +2,32 @@ import SwiftUI
 import ComposableArchitecture
 
 struct PhotoSelectionView: View {
-  let store: StoreOf<PhotoCopyFeature>
+  @Perception.Bindable var store: StoreOf<PhotoFeature>
   
   var body: some View {
-    WithViewStore(store, observe: { $0 }) { viewStore in
-      if viewStore.canProceedToPhotos {
+    WithPerceptionTracking {
+      if store.foldersAreReady {
         GroupBox(label: Text("Photos").font(.headline)) {
-          TextField("Enter photo range or single photos (e.g. 1, 1-10)",
-                    text: viewStore.binding(
-                      get: \.photoInput,
-                      send: { .updatePhotoInput($0) }
-                    )
+          TextField(
+            "Enter photo range or single photos (e.g. 1, 1-10)",
+            text: $store.photoInput.sending(\.photoInputChanged)
           )
           .textFieldStyle(.roundedBorder)
           .onSubmit {
-            viewStore.send(.copyPhotos)
+            store.send(.didTapCopy)
           }
           
           Button(action: {
-            viewStore.send(.copyPhotos)
+            store.send(.didTapCopy)
           }) {
-            Text(viewStore.copyState.isCopying ? "Copying..." : "Copy Photos")
+            Text(store.copyResponse.isCopying ? "Copying..." : "Copy Photos")
               .frame(maxWidth: .infinity)
               .padding()
               .foregroundColor(.white)
-              .background(viewStore.copyState.isCopying ? Color.gray : Color.blue)
+              .background(store.copyResponse.isCopying ? Color.gray : Color.blue)
               .cornerRadius(8)
           }
-          .disabled(viewStore.copyState.isCopying)
+          .disabled(store.copyResponse.isCopying)
           .padding(.top)
         }
       }
