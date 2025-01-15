@@ -77,6 +77,12 @@ struct AppFeature {
           .reduce(into: &state.folderState, action: .clearFolderErrorMessages)
           .map(AppFeature.Action.folder)
         
+      case .customer(.didSelectExistingCustomer):
+        return PhotoFeature()
+          .reduce(into: &state.photoState, action: .clearPhotoInput)
+          .map(AppFeature.Action.photo)
+        
+        
       case .resetState:
         return .concatenate(
           state.folderState.reset().map(Action.folder),
