@@ -37,13 +37,6 @@ struct AppFeature {
   
   // MARK: - Photo Actions
   
-  enum PhotoAction: Equatable {
-    case updatePhotoInput(String)
-    case clearPhotoInput
-    case copyPhotos
-    case copyPhotosCompleted(FileCopyService.FileCopyResponse)
-  }
-  
   @Dependency(\.fileManager) var fileManager
   
   var body: some ReducerOf<Self> {
@@ -55,6 +48,10 @@ struct AppFeature {
       CustomerFeature()
     }
     
+    Scope(state: \.photoState, action: \.photo) {
+      PhotoFeature()
+    }
+
     Reduce { state, action in
       switch action {
       case let .folder(.didPressChooseBase(url)):

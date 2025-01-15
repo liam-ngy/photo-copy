@@ -1,5 +1,5 @@
 struct FileCopyMessageBuilder {
-    static func buildMessage(for result: FileCopyService.FileCopyResponse) -> String {
+  static func buildMessage(for result: FileCopyService.FileCopyResponse.Completed) -> String {
       let builder = MessageBuilder()
 
         switch result {
@@ -18,9 +18,6 @@ struct FileCopyMessageBuilder {
         case .failure(let error):
             builder
             .addLine(error.description)
-        case .idle, .copying:
-          // TODO: Add text
-          return ""
         }
 
         return builder.build()

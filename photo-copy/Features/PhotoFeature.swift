@@ -58,10 +58,10 @@ struct PhotoFeature {
             
           case let .success(photos) where photos.isEmpty:
             // TODO: Better error display
-            await send(.copyPhotosCompleted(.failure(.invalidPhotoRange)))
+            await send(.copyPhotosCompleted(.completed(.failure(.invalidPhotoRange))))
             
           case .failure:
-            await send(.copyPhotosCompleted(.failure(.invalidPhotoRange)))
+            await send(.copyPhotosCompleted(.completed(.failure(.invalidPhotoRange))))
           }
         }
         

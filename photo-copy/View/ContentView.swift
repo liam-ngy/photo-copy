@@ -22,9 +22,9 @@ struct ContentView: View {
       )
       
       CustomerSelectionView(store: store.scope(state: \.customerState, action: \.customer))
-      PhotoSelectionView(store: store)
+      PhotoSelectionView(store: store.scope(state: \.photoState, action: \.photo))
       
-      if store.hasFolderErrorMessages || isCopyOperationCompleted(store.copyState) {
+      if store.folderState.hasFolderErrorMessages || store.photoState.copyResponse.isCompleted {
         ResultDisplayView(store: store)
           .transition(.slide)
       }
@@ -32,19 +32,10 @@ struct ContentView: View {
     }
     .padding()
     .frame(minWidth: 400, minHeight: 500)
-    .onChange(of: store.destinationFolder) { _ in
-      if store.destinationFolder == nil {
+    .onChange(of: store.customerState.customerFolder) { _ in
+      if store.customerState.customerFolder == nil {
         isCustomerInputFocused = true
       }
-    }
-  }
-  // TODO: Move it to feature
-  private func isCopyOperationCompleted(_ copyState: AppFeature.State.CopyState) -> Bool {
-    switch copyState {
-    case .completed(_):
-      return true
-    default:
-      return false
     }
   }
 }

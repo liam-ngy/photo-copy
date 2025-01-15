@@ -15,19 +15,38 @@ enum FileCopyService {
   }
   
   enum FileCopyResponse: Equatable {
-    case success([String])
-    case partialSuccess(copiedFiles: [String], missingFiles: [String])
-    case failure(FileCopyError)
+    enum Completed: Equatable {
+      case success([String])
+      case partialSuccess(copiedFiles: [String], missingFiles: [String])
+      case failure(FileCopyError)
+    }
+    
+    case completed(Self.Completed)
     case idle
     case copying
     
     var description: String {
-      let message = FileCopyMessageBuilder.buildMessage(for: self)
-      return message
+     
+      switch self {
+      case let .completed(result):
+        let message = FileCopyMessageBuilder.buildMessage(for: result)
+        return message
+      case .idle, .copying:
+        return ""
+      }
+      
     }
     
     var isCopying: Bool {
       if case .copying = self {
+        return true
+      }
+      
+      return false
+    }
+    
+    var isCompleted: Bool {
+      if case.completed = self {
         return true
       }
       
@@ -42,12 +61,12 @@ enum FileCopyService {
     
     // Ensure both the source and destination are accessible
     guard source.startAccessingSecurityScopedResource() else {
-      return .failure(.invalidSource)
+      return .completed(.failure(.invalidSource))
     }
     defer { source.stopAccessingSecurityScopedResource() }
     
     guard destination.startAccessingSecurityScopedResource() else {
-      return .failure(.invalidDestination)
+      return .completed(.failure(.invalidDestination))
     }
     defer { destination.stopAccessingSecurityScopedResource() }
     
@@ -73,18 +92,18 @@ enum FileCopyService {
       } catch let error as NSError {
         if error.domain == NSCocoaErrorDomain && error.code == 513 {
           // Error code 513 corresponds to permission-related issues
-          return .failure(.insufficientPermissions)
+          return .completed(.failure(.insufficientPermissions))
         }
         missingFiles.append(file)
       }
     }
     
     if missingFiles.isEmpty {
-      return .success(copiedFiles)
+      return .completed(.success(copiedFiles))
     } else if copiedFiles.isEmpty && !missingFiles.isEmpty {
-      return .failure(.fileNotFound(missingFiles.joined(separator: ", ")))
+      return .completed(.failure(.fileNotFound(missingFiles.joined(separator: ", "))))
     } else {
-      return .partialSuccess(copiedFiles: copiedFiles, missingFiles: missingFiles)
+      return .completed(.partialSuccess(copiedFiles: copiedFiles, missingFiles: missingFiles))
     }
   }
 }
