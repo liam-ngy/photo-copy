@@ -22,12 +22,11 @@ struct BaseFolderView: View {
           }
         )
         
-        if let sourcePath = store.baseFolder?.path {
-          Text(sourcePath)
-            .lineLimit(1)
-            .truncationMode(.middle)
-        }
+        Text(store.baseFolder?.path ?? "No base folder selected")
+          .foregroundColor(.gray)
+          .padding(.leading)
       }
     }
+    .padding(.bottom, 5)
   }
 }
