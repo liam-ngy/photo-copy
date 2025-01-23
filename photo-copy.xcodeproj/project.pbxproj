@@ -34,9 +34,22 @@
 		6686BAFB2D276830006550D8 /* photo-copyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "photo-copyUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		66AD3F982D40D19900F66273 /* Exceptions for "photo-copy" folder in "photo-copy" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 6686BADD2D27682E006550D8 /* photo-copy */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		6686BAE02D27682F006550D8 /* photo-copy */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				66AD3F982D40D19900F66273 /* Exceptions for "photo-copy" folder in "photo-copy" target */,
+			);
 			path = "photo-copy";
 			sourceTree = "<group>";
 		};
@@ -411,6 +424,7 @@
 				DEVELOPMENT_TEAM = 8Q64HL9M7Y;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "photo-copy/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Rex Photo Selector";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -440,6 +454,7 @@
 				DEVELOPMENT_TEAM = 8Q64HL9M7Y;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "photo-copy/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Rex Photo Selector";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (

@@ -4,7 +4,8 @@ import Foundation
 struct FileManagerClient {
   var createDirectory: @Sendable (URL, String) async -> Result<URL, FileCopyService.FileCopyError>
   var getDirectory: @Sendable (URL, String) async -> Result<URL, FileCopyService.FileCopyError>
-  var listContents: @Sendable (URL) async -> Result<[String], FileCopyService.FileCopyError>
+  var listContents: @Sendable (URL) async -> Result<[URL], FileCopyService.FileCopyError>
+  var secureBaseFolder: @Sendable (URL) async -> Result<URL, FileCopyService.FileCopyError>
 }
 
 extension FileManagerClient: DependencyKey {
@@ -17,6 +18,9 @@ extension FileManagerClient: DependencyKey {
     },
     listContents: { url in
       SecureFileManager().listContents(of: url)
+    },
+    secureBaseFolder: { url in
+      SecureFileManager().secureBaseFolder(url)
     }
   )
 }

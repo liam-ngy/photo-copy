@@ -2,162 +2,168 @@ import Foundation
 
 enum FileCopyService {
   enum FileCopyError: Error {
-    case invalidSource
-    case invalidDestination
-    case fileNotFound(String)
-    case copyFailed(String)
-    case insufficientPermissions
-    case invalidPhotoRange
-    case unknownError(String)
-    case customerDirectoryCreationFailed
-    case invalidCustomerInput
-    case directoryNotFound(String)
-  }
-  
-  enum FileCopyResponse: Equatable {
-    enum Completed: Equatable {
-      case success([String])
-      case partialSuccess(copiedFiles: [String], missingFiles: [String])
-      case failure(FileCopyError)
+        case invalidSource
+        case invalidDestination
+        case fileNotFound(String)
+        case copyFailed(String)
+        case insufficientPermissions
+        case invalidPhotoRange
+        case emptyPhotoInput
+        case unknownError(String)
+        case customerDirectoryCreationFailed
+        case invalidCustomerInput
+        case directoryNotFound(String)
     }
-    
-    case completed(Self.Completed)
-    case idle
-    case copying
-    
-    var description: String {
-     
-      switch self {
-      case let .completed(result):
-        let message = FileCopyMessageBuilder.buildMessage(for: result)
-        return message
-      case .idle, .copying:
-        return ""
-      }
-      
-    }
-    
-    var isCopying: Bool {
-      if case .copying = self {
-        return true
-      }
-      
-      return false
-    }
-    
-    var isCompleted: Bool {
-      if case.completed = self {
-        return true
-      }
-      
-      return false
-    }
-  }
-  
-  // TODO: Make Use of SecurityScopedHelper
-  static func copyFiles(from source: URL, to destination: URL, files: [String]) async -> FileCopyResponse {
-    var copiedFiles: [String] = []
-    var missingFiles: [String] = []
-    
-    // Ensure both the source and destination are accessible
-    guard source.startAccessingSecurityScopedResource() else {
-      return .completed(.failure(.invalidSource))
-    }
-    defer { source.stopAccessingSecurityScopedResource() }
-    
-    guard destination.startAccessingSecurityScopedResource() else {
-      return .completed(.failure(.invalidDestination))
-    }
-    defer { destination.stopAccessingSecurityScopedResource() }
-    
-    let fileNames = files
-    
-    for file in fileNames {
-      let sourceFilePath = source.appendingPathComponent(file)
-      let destinationFilePath = destination.appendingPathComponent(file)
-      
-      guard FileManager.default.fileExists(atPath: sourceFilePath.path) else {
-        missingFiles.append(file)
-        continue
-      }
-      
-      if FileManager.default.fileExists(atPath: destinationFilePath.path) {
-        copiedFiles.append(file)
-        continue
-      }
-      
-      do {
-        try FileManager.default.copyItem(at: sourceFilePath, to: destinationFilePath)
-        copiedFiles.append(file)
-      } catch let error as NSError {
-        if error.domain == NSCocoaErrorDomain && error.code == 513 {
-          // Error code 513 corresponds to permission-related issues
-          return .completed(.failure(.insufficientPermissions))
-        }
-        missingFiles.append(file)
-      }
-    }
-    
-    if missingFiles.isEmpty {
-      return .completed(.success(copiedFiles))
-    } else if copiedFiles.isEmpty && !missingFiles.isEmpty {
-      return .completed(.failure(.fileNotFound(missingFiles.joined(separator: ", "))))
-    } else {
-      return .completed(.partialSuccess(copiedFiles: copiedFiles, missingFiles: missingFiles))
-    }
-  }
-}
 
+    enum FileCopyResponse: Equatable {
+        enum Completed: Equatable {
+            case success([String])
+            case partialSuccess(copiedFiles: [String], missingFiles: [String])
+            case failure(FileCopyError)
+        }
+
+        case completed(Self.Completed)
+        case idle
+        case copying
+
+        var description: String {
+
+            switch self {
+            case let .completed(result):
+                let message = FileCopyMessageBuilder.buildMessage(for: result)
+                return message
+            case .idle, .copying:
+                return ""
+            }
+
+        }
+
+        var isCopying: Bool {
+            if case .copying = self {
+                return true
+            }
+
+            return false
+        }
+
+        var isCompleted: Bool {
+            if case .completed = self {
+                return true
+            }
+
+            return false
+        }
+    }
+
+    // TODO: Make Use of SecurityScopedHelper
+    static func copyFiles(from source: URL, to destination: URL, files: [String]) async
+        -> FileCopyResponse
+    {
+        var copiedFiles: [String] = []
+        var missingFiles: [String] = []
+
+        // Ensure both the source and destination are accessible
+        guard source.startAccessingSecurityScopedResource() else {
+            // TODO: Refine error type
+            return .completed(.failure(.invalidSource))
+        }
+        defer { source.stopAccessingSecurityScopedResource() }
+
+        guard destination.startAccessingSecurityScopedResource() else {
+            // TODO: Refine error type
+            return .completed(.failure(.invalidDestination))
+        }
+        defer { destination.stopAccessingSecurityScopedResource() }
+
+        let fileNames = files
+
+        for file in fileNames {
+            let sourceFilePath = source.appendingPathComponent(file)
+            let destinationFilePath = destination.appendingPathComponent(file)
+
+            guard FileManager.default.fileExists(atPath: sourceFilePath.path) else {
+                missingFiles.append(file)
+                continue
+            }
+
+            if FileManager.default.fileExists(atPath: destinationFilePath.path) {
+                copiedFiles.append(file)
+                continue
+            }
+
+            do {
+                try FileManager.default.copyItem(at: sourceFilePath, to: destinationFilePath)
+                copiedFiles.append(file)
+            } catch let error as NSError {
+                if error.domain == NSCocoaErrorDomain && error.code == 513 {
+                    // Error code 513 corresponds to permission-related issues
+                    return .completed(.failure(.insufficientPermissions))
+                }
+                missingFiles.append(file)
+            }
+        }
+
+        if missingFiles.isEmpty {
+            return .completed(.success(copiedFiles))
+        } else if copiedFiles.isEmpty && !missingFiles.isEmpty {
+            return .completed(.failure(.fileNotFound(missingFiles.joined(separator: ", "))))
+        } else {
+            return .completed(.partialSuccess(copiedFiles: copiedFiles, missingFiles: missingFiles))
+        }
+    }
+}
 
 // MARK: - Error
 
 extension FileCopyService.FileCopyError: Equatable {
-  // Add this if Swift can't synthesize Equatable automatically
-  static func == (lhs: FileCopyService.FileCopyError, rhs: FileCopyService.FileCopyError) -> Bool {
-      switch (lhs, rhs) {
-      case (.invalidSource, .invalidSource),
-           (.invalidDestination, .invalidDestination),
-           (.insufficientPermissions, .insufficientPermissions),
-           (.invalidPhotoRange, .invalidPhotoRange),
-           (.customerDirectoryCreationFailed, .customerDirectoryCreationFailed),
-           (.invalidCustomerInput, .invalidCustomerInput):
-          return true
-      case (.fileNotFound(let l), .fileNotFound(let r)):
-          return l == r
-      case (.copyFailed(let l), .copyFailed(let r)):
-          return l == r
-      case (.unknownError(let l), .unknownError(let r)):
-          return l == r
-      default:
-          return false
-      }
-  }
-}
-
-extension FileCopyService.FileCopyError: CustomStringConvertible {
-      var description: String {
-      switch self {
-      case .invalidSource:
-        return "The source folder does not exist."
-      case .invalidDestination:
-        return "The destination folder does not exist."
-      case .fileNotFound(let file):
-        return "The file '\(file)' was not found in the source folder."
-      case .copyFailed(let file):
-        return "Failed to copy the file '\(file)'."
-      case .insufficientPermissions:
-        return "Insufficient permissions to access or copy files."
-      case .invalidPhotoRange:
-        return "Please enter a valid photo range."
-      case .unknownError(let message):
-        return "An unknown error occurred: \(message)"
-      case .customerDirectoryCreationFailed:
-        return "Couldn't create directory"
-      case .invalidCustomerInput:
-      return "Invalid customer input"
-      case let .directoryNotFound(directoryName):
-        return "Couldn't find directory \(directoryName)"
-      }
+    static func == (lhs: FileCopyService.FileCopyError, rhs: FileCopyService.FileCopyError) -> Bool {
+        switch (lhs, rhs) {
+        case (.invalidSource, .invalidSource),
+            (.invalidDestination, .invalidDestination),
+            (.insufficientPermissions, .insufficientPermissions),
+            (.invalidPhotoRange, .invalidPhotoRange),
+            (.customerDirectoryCreationFailed, .customerDirectoryCreationFailed),
+            (.invalidCustomerInput, .invalidCustomerInput),
+            (.emptyPhotoInput, .emptyPhotoInput):
+            return true
+        case (.fileNotFound(let l), .fileNotFound(let r)):
+            return l == r
+        case (.copyFailed(let l), .copyFailed(let r)):
+            return l == r
+        case (.unknownError(let l), .unknownError(let r)):
+            return l == r
+        case (.directoryNotFound(let l), .directoryNotFound(let r)):  // Added this case
+            return l == r
+        default:
+            return false
+        }
     }
-
+}
+extension FileCopyService.FileCopyError: CustomStringConvertible {
+    var description: String {
+        switch self {
+        case .invalidSource:
+            return "The source folder does not exist."
+        case .invalidDestination:
+            return "The destination folder does not exist."
+        case .fileNotFound(let file):
+            return "The file '\(file)' was not found in the source folder."
+        case .copyFailed(let file):
+            return "Failed to copy the file '\(file)'."
+        case .insufficientPermissions:
+            return "Insufficient permissions to access or copy files."
+        case .invalidPhotoRange:
+            return "Please enter a valid photo range."
+        case .unknownError(let message):
+            return "An unknown error occurred: \(message)"
+        case .customerDirectoryCreationFailed:
+            return "Couldn't create directory"
+        case .invalidCustomerInput:
+            return "Invalid customer input"
+        case let .directoryNotFound(directoryName):
+            return "Couldn't find directory \(directoryName)"
+        case .emptyPhotoInput:
+            return "Photo input is empty, please enter photos."
+        }
+    }
 }

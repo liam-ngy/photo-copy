@@ -21,7 +21,7 @@ struct PhotoFeature {
     }
     
     var canCopyPhotos: Bool {
-      !photoInput.isEmpty && foldersAreReady
+      return !photoInput.isEmpty && foldersAreReady && !copyResponse.isCopying
     }
   }
   

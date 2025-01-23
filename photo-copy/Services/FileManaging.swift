@@ -1,16 +1,37 @@
 import Foundation
 
 protocol FileManaging {
-  func createDirectory(at baseURL: URL, withName name: String) -> Result<URL, FileCopyService.FileCopyError>
-  func getDirectory(at baseURL: URL, withName name: String) -> Result<URL, FileCopyService.FileCopyError>
-  func listContents(of url: URL) -> Result<[String], FileCopyService.FileCopyError>
+  func createDirectory(at baseURL: URL, withName name: String) -> Result<
+    URL, FileCopyService.FileCopyError
+  >
+  func getDirectory(at baseURL: URL, withName name: String) -> Result<
+    URL, FileCopyService.FileCopyError
+  >
+  func listContents(of url: URL) -> Result<[URL], FileCopyService.FileCopyError>
+  func secureBaseFolder(_ url: URL) -> Result<URL, FileCopyService.FileCopyError>
 }
 
 final class SecureFileManager: FileManaging {
   private let fileManager = FileManager.default
-  
-  // TODO: Needs to be changed to finals
-  func createDirectory(at baseURL: URL, withName name: String) -> Result<URL, FileCopyService.FileCopyError> {
+
+  func secureBaseFolder(_ url: URL) -> Result<URL, FileCopyService.FileCopyError> {
+    SecurityScopedHelper.createSecureBookmark(for: url)
+  }
+
+  func getDirectory(at baseURL: URL, withName name: String) -> Result<
+    URL, FileCopyService.FileCopyError
+  > {
+    let dirURL = baseURL.appendingPathComponent(name)
+    if FileManager.default.fileExists(atPath: dirURL.path) {
+      return SecurityScopedHelper.createSecureBookmark(for: dirURL)
+    } else {
+      return .failure(.directoryNotFound(dirURL.lastPathComponent))
+    }
+  }
+
+  func createDirectory(at baseURL: URL, withName name: String) -> Result<
+    URL, FileCopyService.FileCopyError
+  > {
     SecurityScopedHelper.access(baseURL) {
       let newDirURL = baseURL.appendingPathComponent(name)
       do {
@@ -25,27 +46,16 @@ final class SecureFileManager: FileManaging {
       }
     }
   }
-  
-  func getDirectory(at baseURL: URL, withName name: String) -> Result<URL, FileCopyService.FileCopyError> {
-    let dirURL = baseURL.appendingPathComponent(name)
-    
-    if FileManager.default.fileExists(atPath: dirURL.path) {
-      return SecurityScopedHelper.access(baseURL) {
-        return SecurityScopedHelper.createSecureBookmark(for: dirURL)
-      }
-    } else {
-      return .failure(.directoryNotFound(dirURL.lastPathComponent))
-    }
-  }
-  
-  func listContents(of url: URL) -> Result<[String], FileCopyService.FileCopyError> {
+
+  func listContents(of url: URL) -> Result<[URL], FileCopyService.FileCopyError> {
     SecurityScopedHelper.access(url) {
       do {
         let contents = try fileManager.contentsOfDirectory(
           at: url,
-          includingPropertiesForKeys: nil
+          includingPropertiesForKeys: nil,
+          options: [.skipsHiddenFiles]
         )
-        return .success(contents.map { $0.lastPathComponent }.sorted())
+        return .success(contents)
       } catch {
         return .failure(.insufficientPermissions)
       }

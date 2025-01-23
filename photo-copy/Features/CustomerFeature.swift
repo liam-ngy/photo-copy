@@ -5,16 +5,18 @@ import ComposableArchitecture
 
 @Reducer
 struct CustomerFeature {
+  
   @ObservableState
   struct State: Equatable {
     @Shared(.inMemory("paxFolder"))
     var paxFolder: URL?
     
-    // TODO: Should i check for pax
     @Shared(.inMemory("customerFolder"))
     var customerFolder: URL?
 
-    var existingCustomers: [String] = []
+    var selectedCustomer: Customer?
+    
+    var existingCustomers: [Customer] = []
     var customerInput: String = ""
     
     var hasValidCustomerInput: Bool {
@@ -36,12 +38,12 @@ struct CustomerFeature {
   
   enum Action: Equatable {
     // Can be called from the UI
-    case didSelectExistingCustomer(String)
+    case didSelectExistingCustomer(UUID)
     case didTapCreateCustomer
-    case didTapNewCustomer
     case customerInputChanged(String)
     
-    case existingCustomersLoaded([String])
+    case selectCustomer(Customer)
+    case existingCustomersLoaded([Customer])
     case loadExistingCustomers
     case setCustomerFolder(URL)
     case customerDirectoryFailed(FileCopyService.FileCopyError)
@@ -55,37 +57,33 @@ struct CustomerFeature {
       switch action {
       case let .existingCustomersLoaded(customers):
         state.existingCustomers = customers
-        print(state.existingCustomers)
         return .none
         
       case .loadExistingCustomers:
         guard let paxFolder = state.paxFolder else { return .none }
         
-        return .run { send in
+        return .run { [existingCustomers = state.existingCustomers] send in
           switch await fileManager.listContents(paxFolder) {
           case let .success(customers):
-            await send(.existingCustomersLoaded(customers))
+            let transformedCustomers = customers.map { url in
+              if let existingCustomer = existingCustomers.first(where: { $0.url == url }) {
+                return existingCustomer  // Preserve existing customer with same ID
+              }
+              
+              return Customer(url: url)  // Only create new one if not found
+            }.sorted { $0.name < $1.name }
+            
+            await send(.existingCustomersLoaded(transformedCustomers))
             
           case let .failure(error):
             await send(.customerDirectoryFailed(error))
           }
         }
         
-      case let .didSelectExistingCustomer(customer):
-        guard let paxFolder = state.paxFolder else { return .none }
-        state.customerInput = customer
+      case let .didSelectExistingCustomer(id):
+        guard let customer = state.existingCustomers.first(where: { $0.id == id }) else { return .none }
         
-        return .run { send in
-          // TODO: Fix it
-          //          await send(.photo(.clearPhotoInput))
-          switch await fileManager.getDirectory(paxFolder, customer) {
-          case let .success(url):
-            await send(.setCustomerFolder(url))
-            
-          case let .failure(error):
-            await send(.customerDirectoryFailed(error))
-          }
-        }
+        return .send(.selectCustomer(customer))
         
       case let .setCustomerFolder(url):
         state.$customerFolder.withLock { $0 = url }
@@ -97,28 +95,38 @@ struct CustomerFeature {
         return .none
         
       case .didTapCreateCustomer:
-        guard let paxFolder = state.paxFolder, !state.customerInput.trimmingCharacters(in: .whitespaces).isEmpty else { return .none }
+        guard let paxFolder = state.paxFolder,
+              !state.customerInput.trimmingCharacters(in: .whitespaces).isEmpty else { return .none }
           
         return .run { [customerInput = state.customerInput] send in
-          switch await fileManager.createDirectory(paxFolder, customerInput) {
-          case let .success(customerUrl):
-            await send(.setCustomerFolder(customerUrl))
-            
-          case let .failure(error):
-            await send(.customerDirectoryFailed(error))
-          }
-          
+          switch await fileManager.createDirectory(paxFolder, customerInput.sanitizedCustomerInput()) {
+            case let .success(url):
+              let newCustomer = Customer(url: url)
+              await send(.loadExistingCustomers)
+              await send(.selectCustomer(newCustomer))
+                
+            case let .failure(error):
+                await send(.customerDirectoryFailed(error))
+            }
         }
-        
-      case .didTapNewCustomer:
-        state.customerInput = ""
-        state.$customerFolder.withLock { $0 = nil }
-        // state.copyState = .idle
-        return .none
         
       case let .customerInputChanged(text):
         state.customerInput = text
         return .none
+        
+      case let .selectCustomer(customer):
+        state.selectedCustomer = customer
+        state.customerInput = ""
+        guard let paxFolder = state.paxFolder else { return .none }
+        
+        return .run { send in
+            switch await fileManager.getDirectory(paxFolder, customer.name) {
+            case let .success(url):
+                await send(.setCustomerFolder(url))
+            case let .failure(error):
+                await send(.customerDirectoryFailed(error))
+            }
+        }
       }
     }
   }
@@ -135,3 +143,13 @@ extension CustomerFeature.State {
   }
 }
 
+
+extension String {
+  
+  func sanitizedCustomerInput() -> String {
+    return self.trimmingCharacters(in: .whitespaces)
+      .components(separatedBy: .init(charactersIn: "/\\:*?\"<>|"))
+      .joined()
+  }
+  
+}
