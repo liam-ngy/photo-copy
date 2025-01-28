@@ -30,10 +30,10 @@ struct ContentView: View {
       PhotoSelectionView(store: store.scope(state: \.photoState, action: \.photo))
         .padding(.bottom)
 
-      if store.folderState.hasFolderErrorMessages || store.photoState.copyResponse.isCompleted {
+//      if store.folderState.hasFolderErrorMessages || store.photoState.copyResponse.isCompleted {
         ResultDisplayView(store: store)
           .transition(.slide)
-      }
+//      }
       Spacer()
     }
     .padding()
