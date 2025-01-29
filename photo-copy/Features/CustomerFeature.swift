@@ -1,6 +1,7 @@
 
 import Foundation
 import ComposableArchitecture
+import os.log
 
 
 @Reducer
@@ -158,7 +159,7 @@ struct CustomerFeature {
             }
           }
         }
-        .cancellable(id: CancelID.customerFolderChange)
+        .cancellable(id: CancelID.customerFolderChange, cancelInFlight: true)
       }
     }
   }
