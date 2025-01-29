@@ -13,6 +13,9 @@ struct CustomerFeature {
     
     @Shared(.inMemory("customerFolder"))
     var customerFolder: URL?
+    
+    @Shared(.inMemory("customerPhotos"))
+    var customerPhotos: [URL] = []
 
     var selectedCustomer: Customer?
     
@@ -42,6 +45,9 @@ struct CustomerFeature {
     case didTapCreateCustomer
     case customerInputChanged(String)
     
+    case setupFolderWatcher(URL?)
+    
+    case setCustomerPhotos([URL])
     case selectCustomer(Customer)
     case existingCustomersLoaded([Customer])
     case loadExistingCustomers
@@ -49,12 +55,18 @@ struct CustomerFeature {
     case customerDirectoryFailed(FileCopyService.FileCopyError)
   }
   
+  enum CancelID { case customerFolderChange }
+  
   @Dependency(\.fileManager) var fileManager
-
+  @Dependency(\.folderWatcher) var folderWatcher
+  
   var body: some ReducerOf<Self> {
-    
     Reduce { state, action in
       switch action {
+      case let .setCustomerPhotos(files):
+        state.$customerPhotos.withLock { $0 = files }
+        return .none
+        
       case let .existingCustomersLoaded(customers):
         state.existingCustomers = customers
         return .none
@@ -88,8 +100,10 @@ struct CustomerFeature {
       case let .setCustomerFolder(url):
         state.$customerFolder.withLock { $0 = url }
         
-        return .send(.loadExistingCustomers)
-        
+        return .run { send in
+          await send(.setupFolderWatcher(url))
+          await send(.loadExistingCustomers)
+        }
         
       case .customerDirectoryFailed:
         return .none
@@ -97,17 +111,17 @@ struct CustomerFeature {
       case .didTapCreateCustomer:
         guard let paxFolder = state.paxFolder,
               !state.customerInput.trimmingCharacters(in: .whitespaces).isEmpty else { return .none }
-          
+        
         return .run { [customerInput = state.customerInput] send in
           switch await fileManager.createDirectory(paxFolder, customerInput.sanitizedCustomerInput()) {
-            case let .success(url):
-              let newCustomer = Customer(url: url)
-              await send(.loadExistingCustomers)
-              await send(.selectCustomer(newCustomer))
-                
-            case let .failure(error):
-                await send(.customerDirectoryFailed(error))
-            }
+          case let .success(url):
+            let newCustomer = Customer(url: url)
+            await send(.loadExistingCustomers)
+            await send(.selectCustomer(newCustomer))
+            
+          case let .failure(error):
+            await send(.customerDirectoryFailed(error))
+          }
         }
         
       case let .customerInputChanged(text):
@@ -120,13 +134,31 @@ struct CustomerFeature {
         guard let paxFolder = state.paxFolder else { return .none }
         
         return .run { send in
-            switch await fileManager.getDirectory(paxFolder, customer.name) {
-            case let .success(url):
-                await send(.setCustomerFolder(url))
-            case let .failure(error):
-                await send(.customerDirectoryFailed(error))
-            }
+          switch await fileManager.getDirectory(paxFolder, customer.name) {
+          case let .success(url):
+            await send(.setCustomerFolder(url))
+          case let .failure(error):
+            await send(.customerDirectoryFailed(error))
+          }
         }
+        
+      case let .setupFolderWatcher(url):
+        guard let customerFolder = url else {
+          return .cancel(id: CancelID.customerFolderChange)
+        }
+        
+        return .run { send in
+          for await result in folderWatcher.start(customerFolder) {
+            switch result {
+            case let .success(files):
+              await send(.setCustomerPhotos(files))
+              
+            case .failure(let error):
+              print("Error watching folder: \(error)")
+            }
+          }
+        }
+        .cancellable(id: CancelID.customerFolderChange)
       }
     }
   }

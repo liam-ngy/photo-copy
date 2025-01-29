@@ -65,7 +65,6 @@ struct PhotoFeature {
           }
         }
         
-        
       case let .photoInputChanged(text):
         state.photoInput = text
         return .none

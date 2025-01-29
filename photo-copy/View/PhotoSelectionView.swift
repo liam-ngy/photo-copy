@@ -3,6 +3,10 @@ import ComposableArchitecture
 
 struct PhotoSelectionView: View {
   @Perception.Bindable var store: StoreOf<PhotoFeature>
+  @State var showSharing: Bool = false
+  
+  @Shared(.inMemory("customerPhotos"))
+  var customerPhotos: [URL] = []
   
   var body: some View {
     WithPerceptionTracking {
@@ -23,6 +27,11 @@ struct PhotoSelectionView: View {
               Text(store.copyResponse.isCopying ? "Copying..." : "Copy Photos")
             }
             .disabled(!store.canCopyPhotos)
+            
+            ShareLink(items: customerPhotos) {
+              Image(systemName: "square.and.arrow.down")
+            }
+            .disabled(customerPhotos.isEmpty)
           }
           .padding()
         }
@@ -31,3 +40,4 @@ struct PhotoSelectionView: View {
     }
   }
 }
+

@@ -17,7 +17,7 @@ struct CustomerSelectionView: View {
                   }
                 }
               }
-              .frame(maxWidth: 200)
+              .frame(maxWidth: 250)
               .disabled(store.paxFolder == nil || store.existingCustomers.isEmpty)
               
               TextField("Enter customer safety number and name", text: $store.customerInput.sending(\.customerInputChanged))
