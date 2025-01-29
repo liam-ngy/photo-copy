@@ -29,7 +29,7 @@ struct PhotoSelectionView: View {
             .disabled(!store.canCopyPhotos)
             
             ShareLink(items: customerPhotos) {
-              Image(systemName: "square.and.arrow.down")
+              Image(systemName: "square.and.arrow.up")
             }
             .disabled(customerPhotos.isEmpty)
           }
