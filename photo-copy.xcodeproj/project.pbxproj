@@ -432,7 +432,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.5;
-				MARKETING_VERSION = 0.4;
+				MARKETING_VERSION = 0.5;
 				OTHER_SWIFT_FLAGS = "-enable-upcoming-feature InferSendableFromCaptures";
 				PRODUCT_BUNDLE_IDENTIFIER = "liam-ng.photo-copy";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -462,7 +462,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.5;
-				MARKETING_VERSION = 0.4;
+				MARKETING_VERSION = 0.5;
 				OTHER_SWIFT_FLAGS = "-enable-upcoming-feature InferSendableFromCaptures";
 				PRODUCT_BUNDLE_IDENTIFIER = "liam-ng.photo-copy";
 				PRODUCT_NAME = "$(TARGET_NAME)";

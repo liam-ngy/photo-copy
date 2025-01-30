@@ -21,9 +21,9 @@ struct FileGridView: View {
   var body: some View {
     LazyVGrid(columns: [GridItem(.adaptive(minimum: 120))],
               alignment: .leading,
-              spacing: 8) { // Reduced from 8 to 4
+              spacing: 8) {
       ForEach(files, id: \.self) { file in
-        HStack(spacing: 8) { // Added spacing parameter, reduced from default
+        HStack(spacing: 8) {
           Image(systemName: iconName)
             .foregroundColor(iconColor)
           Text(file)
