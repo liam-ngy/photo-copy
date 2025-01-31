@@ -1,8 +1,9 @@
 import Foundation
+
 struct Customer: Identifiable, Hashable, Equatable {
-  let id: UUID  // Unique identifier for each customer
-  let name: String // Folder name
-  let url: URL    // Folder path
+  let id: UUID
+  let name: String
+  let url: URL
   
   init(id: UUID = UUID(), name: String, url: URL) {
     self.id = id
