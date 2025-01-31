@@ -3,7 +3,6 @@ import ComposableArchitecture
 
 struct PhotoSelectionView: View {
   @Perception.Bindable var store: StoreOf<PhotoFeature>
-  @State var showSharing: Bool = false
   
   @Shared(.inMemory("customerPhotos"))
   var customerPhotos: [URL] = []
@@ -41,3 +40,9 @@ struct PhotoSelectionView: View {
   }
 }
 
+
+#Preview {
+  PhotoSelectionView(store: Store(initialState: PhotoFeature.State(), reducer: {
+    PhotoFeature()
+  }), customerPhotos: [])
+}

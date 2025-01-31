@@ -93,3 +93,10 @@ struct ResultDisplayView: View {
     }
   }
 }
+
+#Preview {
+  ResultDisplayView(store: Store(initialState: AppFeature.State(), reducer: {
+    AppFeature()._printChanges()
+  }), customerFolder: nil)
+}
+
