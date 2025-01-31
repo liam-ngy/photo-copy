@@ -49,7 +49,23 @@ extension FolderWatcherClient: DependencyKey {
       start: { url in
         AsyncStream { continuation in
           let task = Task {
-            let fileManager = SecureFileManager()
+            
+            // TODO: Figure out how to use dependency during initial process
+            func listContents(_ url: URL) -> Result<[URL], FileCopyService.FileCopyError> {
+              SecurityScopedHelper.access(url) {
+                do {
+                  let fileManager = FileManager.default
+                  let contents = try fileManager.contentsOfDirectory(
+                    at: url,
+                    includingPropertiesForKeys: nil,
+                    options: [.skipsHiddenFiles]
+                  )
+                  return .success(contents)
+                } catch {
+                  return .failure(.insufficientPermissions)
+                }
+              }
+            }
             
             // Open directory for monitoring
             let descriptor = open(url.path, O_EVTONLY)
@@ -71,7 +87,7 @@ extension FolderWatcherClient: DependencyKey {
             source.setEventHandler {
               Task { @MainActor in
                 logger.debug("🔍 Folder change detected for: \(url)")
-                let result = fileManager.listContents(of: url)
+                let result = listContents(url)
                   .map { urls in
                     urls.filter { url in
                       let suffix = url.pathExtension.lowercased()
@@ -91,7 +107,7 @@ extension FolderWatcherClient: DependencyKey {
             logger.debug("▶️ Watcher resumed for folder: \(url)")
             
             // Send initial state
-            let initialResult = fileManager.listContents(of: url)
+            let initialResult = listContents(url)
               .map { urls in
                 urls.filter { url in
                   let suffix = url.pathExtension.lowercased()
