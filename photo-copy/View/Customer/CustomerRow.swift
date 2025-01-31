@@ -1,12 +1,14 @@
 import SwiftUI
+import ComposableArchitecture
 
 struct CustomerRow: View {
+  let customer: Customer
   @State var hasPaid: Bool = false
   
   var body: some View {
     HStack {
       VStack(alignment: .leading) {
-        Text("Liam")
+        Text(customer.name)
           .font(.headline)
         Text("3 Photos")
           .font(.subheadline)

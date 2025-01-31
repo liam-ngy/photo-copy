@@ -9,11 +9,7 @@ struct photo_copyApp: App {
   
   var body: some Scene {
     Window("Rex Photo Selector", id: "mainWindow") {
-//      ContentView(store: self.store)
-//        .onOpenURL { url in
-//          self.store.send(.folder(.didPressChooseBase(url)))
-//        }
-      SideBarMenuView()
+      AppView()
     }
     .windowResizability(.contentSize)
   }
